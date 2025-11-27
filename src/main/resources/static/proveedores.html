@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>OXXO | Proveedores</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/proveedores.css">
+</head>
+<body>
+  <script> document.addEventListener('DOMContentLoaded', () => Auth.requireAuth(['ADMIN'])); </script>
+
+  <!-- NAV -->
+  <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+    <div class="container-fluid">
+      <a class="navbar-brand d-flex align-items-center" href="inicio.html" aria-label="Ir al inicio">
+        <img src="../img/OXXO-Logo.wine.png" class="brand-logo" alt="OXXO" width="76">
+      </a>
+      <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div id="nav" class="collapse navbar-collapse">
+        <ul class="navbar-nav me-auto">
+          <!-- visibles para ambos -->
+          <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="inicio.html">Inicio</a></li>
+          <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="venta.html">Ventas</a></li>
+          <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="clientes.html">Clientes frecuentes</a></li>
+        
+          <!-- solo ADMIN -->
+          <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="inventario.html">Inventario</a></li>
+          <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="productos.html">Productos</a></li>
+          <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="proveedores.html">Proveedores</a></li>
+          <li class="nav-item dropdown" data-roles="ADMIN">
+            <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#">Reportes</a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="reportes.html#ventas">R. Ventas</a></li>
+              <li><a class="dropdown-item" href="reportes.html#clientes">R. Clientes</a></li>
+              <li><a class="dropdown-item" href="reportes.html#productos">R. Productos</a></li>
+            </ul>
+          </li>
+          <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="cierre.html">Cierre de caja</a></li>
+        </ul>
+        
+        <div class="d-flex align-items-center gap-2">
+          <span class="navbar-text small">Hola, <strong id="navUserName">—</strong></span>
+          <a class="btn btn-outline-light btn-sm" href="cierre.html" data-roles="ADMIN,CAJERO">Cerrar turno</a>
+          <button class="btn btn-outline-light btn-sm" type="button" onclick="Auth.logout()">Salir</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- CONTENT -->
+  <main class="container-fluid with-sidebar">
+    <div class="row">
+      <div class="col-12 px-3 px-md-4">
+
+        <!-- Header + Acciones -->
+        <div class="pt-3 pb-2 border-bottom d-flex flex-wrap gap-2 justify-content-between align-items-center">
+          <h1 class="h4 fw-bold text-danger m-0">🏭 Proveedores</h1>
+          <div class="d-flex gap-2">
+            <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalProveedor" onclick="openProveedor()">Nuevo proveedor</button>
+            <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalPedido" onclick="openPedido()">Nuevo pedido</button>
+          </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="row g-3 mt-2">
+          <div class="col-6 col-md-3">
+            <div class="card shadow-sm"><div class="card-body">
+              <h6 class="text-muted m-0">Proveedores activos</h6>
+              <div class="fs-3 fw-semibold" id="kpiActivos">—</div>
+            </div></div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="card shadow-sm"><div class="card-body">
+              <h6 class="text-muted m-0">Lead time promedio</h6>
+              <div class="fs-3 fw-semibold"><span id="kpiLead">—</span> <small class="text-muted">días</small></div>
+            </div></div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="card shadow-sm"><div class="card-body">
+              <h6 class="text-muted m-0">Pedidos pendientes</h6>
+              <div class="fs-3 fw-semibold text-danger" id="kpiPendientes">—</div>
+            </div></div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="card shadow-sm"><div class="card-body">
+              <h6 class="text-muted m-0">Cumplimiento</h6>
+              <div class="fs-3 fw-semibold" id="kpiCumplimiento">—</div>
+              <small class="text-muted">recibidos / total</small>
+            </div></div>
+          </div>
+        </div>
+
+        <!-- Filtros proveedores -->
+        <div class="d-flex flex-wrap align-items-center gap-2 my-3">
+          <input id="filtroProvTxt" class="form-control form-control-sm w-auto" placeholder="Buscar nombre / contacto / email">
+          <select id="filtroProvEstado" class="form-select form-select-sm w-auto">
+            <option value="">Todos</option>
+            <option value="activos">Activos</option>
+            <option value="inactivos">Inactivos</option>
+          </select>
+          <button class="btn btn-sm btn-outline-secondary" id="exportProv">Exportar proveedores</button>
+        </div>
+
+        <!-- Tabla de proveedores -->
+        <div class="table-responsive" style="max-height:360px;">
+          <table class="table table-hover align-middle" id="tablaProv">
+            <thead class="table-dark">
+              <tr>
+                <th>ID</th><th>Proveedor</th><th>Contacto</th><th>Email</th><th>Teléfono</th>
+                <th class="text-end">Lead time (d)</th><th>Productos</th><th>Estado</th>
+                <th class="text-end">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="provBody"></tbody>
+          </table>
+        </div>
+
+        <!-- Filtros pedidos -->
+        <div class="d-flex flex-wrap align-items-center gap-2 mt-4">
+          <h2 class="h6 m-0">Pedidos</h2>
+          <input id="filtroPedTxt" class="form-control form-control-sm w-auto ms-2" placeholder="Buscar por proveedor / PO">
+          <select id="filtroPedEstado" class="form-select form-select-sm w-auto">
+            <option value="">Todos</option>
+            <option value="PENDIENTE">Pendiente</option>
+            <option value="RECIBIDO">Recibido</option>
+            <option value="CANCELADO">Cancelado</option>
+          </select>
+          <button class="btn btn-sm btn-outline-secondary" id="exportPed">Exportar pedidos</button>
+        </div>
+
+        <!-- Tabla de pedidos -->
+        <div class="table-responsive" style="max-height:420px;">
+          <table class="table table-hover align-middle" id="tablaPed">
+            <thead class="table-dark">
+              <tr>
+                <th>PO</th><th>Proveedor</th><th>Fecha</th><th>Estimada</th><th>Estado</th>
+                <th class="text-end">Ítems</th><th class="text-end">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="poBody"></tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL: Proveedor (nuevo/editar) -->
+  <div class="modal fade" id="modalProveedor" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg"><div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="titleProv">Nuevo proveedor</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formProv" class="row g-2 needs-validation" novalidate>
+          <input type="hidden" id="provIdEdit">
+          <div class="col-md-3">
+            <label class="form-label">ID</label>
+            <input id="provId" class="form-control" placeholder="PV500" required>
+            <div class="invalid-feedback">ID requerido.</div>
+          </div>
+          <div class="col-md-5">
+            <label class="form-label">Nombre</label>
+            <input id="provNom" class="form-control" required>
+            <div class="invalid-feedback">Requerido.</div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Contacto</label>
+            <input id="provCont" class="form-control" required>
+            <div class="invalid-feedback">Requerido.</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Email</label>
+            <input id="provMail" type="email" class="form-control" required>
+            <div class="invalid-feedback">Email válido.</div>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Teléfono</label>
+            <input id="provTel" class="form-control">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Lead time (días)</label>
+            <input id="provLead" type="number" min="0" class="form-control" required>
+            <div class="invalid-feedback">Ingresa días.</div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Estado</label>
+            <select id="provActivo" class="form-select">
+              <option value="true" selected>Activo</option>
+              <option value="false">Inactivo</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Productos que suministra (separados por coma)</label>
+            <textarea id="provProds" class="form-control" rows="2" placeholder="Coca-Cola 600ml, Agua 625ml, ..."></textarea>
+          </div>
+          <div class="col-12 d-grid">
+            <button class="btn btn-danger">Guardar</button>
+          </div>
+        </form>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- MODAL: Pedido (nuevo) -->
+  <div class="modal fade" id="modalPedido" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg"><div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title" id="titlePed">Nuevo pedido</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formPed" class="row g-2 needs-validation" novalidate>
+          <div class="col-md-6">
+            <label class="form-label">Proveedor</label>
+            <select id="pedProv" class="form-select" required></select>
+            <div class="invalid-feedback">Selecciona un proveedor.</div>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">Fecha estimada</label>
+            <input id="pedEta" type="date" class="form-control" required>
+            <div class="invalid-feedback">Requerido.</div>
+          </div>
+            <div class="col-md-3">
+            <label class="form-label">Estado</label>
+            <select id="pedEstado" class="form-select" required>
+              <option value="PENDIENTE">Pendiente</option>
+              <option value="RECIBIDO">Recibido</option>
+              <option value="CANCELADO">Cancelado</option>
+            </select>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Ítems (un ítem por línea)</label>
+            <textarea id="pedItems" class="form-control" rows="4" placeholder="JUGO-500 x 100
+GAL-40 x 80" required></textarea>
+            <div class="small text-muted mt-1">Formato: <em>SKU x Cantidad</em></div>
+          </div>
+          <div class="col-12 d-flex justify-content-between">
+            <small class="text-muted">Se generará un PO automáticamente.</small>
+            <div>
+              <button class="btn btn-outline-secondary me-2" type="button" onclick="formPedReset()">Limpiar</button>
+              <button class="btn btn-primary">Guardar pedido</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/auth.js" defer></script>
+<script src="/js/api.js"  defer></script>
+  <script>
+  // --- Helpers API ---
+  const API = {
+    proveedores: {
+      async list() {
+        const r = await fetch('/api/proveedores');
+        if (!r.ok) throw new Error('Error list proveedores');
+        return r.json();
+      },
+      async toggle(id, value) {
+        const r = await fetch(`/api/proveedores/${encodeURIComponent(id)}/activo?value=${value}`, { method: 'PATCH' });
+        if (!r.ok) throw new Error('Error toggle proveedor');
+      },
+      async create(p) {
+        const r = await fetch('/api/proveedores', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(p)
+        });
+        if (!r.ok) throw new Error('Error creando proveedor');
+        return r.json();
+      },
+      async kpis() {
+        const r = await fetch('/api/proveedores/kpis');
+        if (!r.ok) throw new Error('Error KPIs proveedores');
+        return r.json();
+      }
+    },
+    pedidos: {
+      async list() {
+        const r = await fetch('/api/pedidos');
+        if (!r.ok) throw new Error('Error list pedidos');
+        return r.json();
+      },
+      async create(p) {
+        const r = await fetch('/api/pedidos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(p)
+        });
+        if (!r.ok) throw new Error('Error creando pedido');
+        return r.json();
+      }
+    }
+  };
+
+  // --- Utils ---
+  const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  const fmtDate = (d) => d ? new Date(d).toLocaleDateString('es-PE') : '-';
+
+  document.addEventListener('DOMContentLoaded', initProv);
+
+  async function initProv(){
+    // KPIs
+    try{
+      const k = await API.proveedores.kpis();
+      setText('kpiActivos', k.activos ?? 0);
+      setText('kpiLead', (k.leadTimePromedioDias ?? 0).toFixed(1));
+      setText('kpiPendientes', k.pedidosPendientes ?? 0);
+      setText('kpiCumplimiento', Math.round(k.cumplimientoPorc ?? 0) + '%');
+    }catch(e){ console.warn(e); }
+
+    // Proveedores
+    await loadProveedoresTable();
+
+    // Pedidos
+    await loadPedidosTable();
+
+    // Filtros / Export
+    document.getElementById('filtroProvTxt').addEventListener('input', applyProvFilters);
+    document.getElementById('filtroProvEstado').addEventListener('change', applyProvFilters);
+    document.getElementById('exportProv').addEventListener('click', exportProvCSV);
+
+    document.getElementById('filtroPedTxt').addEventListener('input', applyPedFilters);
+    document.getElementById('filtroPedEstado').addEventListener('change', applyPedFilters);
+    document.getElementById('exportPed').addEventListener('click', exportPedCSV);
+
+    // Submit formularios
+    document.getElementById('formProv').addEventListener('submit', onSubmitProveedor);
+    document.getElementById('formPed').addEventListener('submit', onSubmitPedido);
+  }
+
+  async function loadProveedoresTable(){
+    const data = await API.proveedores.list();
+    const tbody = document.getElementById('provBody');
+    const selProv = document.getElementById('pedProv');
+    tbody.innerHTML = '';
+    selProv.innerHTML = '<option value="" selected disabled>Selecciona…</option>';
+
+    for(const p of data){
+      const badge = p.activo ? 'success' : 'secondary';
+      tbody.insertAdjacentHTML('beforeend', `
+        <tr data-prov-row data-id="${p.id}" data-nombre="${p.nombre}" data-contacto="${p.contacto||''}" data-email="${p.email||''}" data-activo="${p.activo?'1':'0'}">
+          <td>${p.id}</td>
+          <td>${p.nombre}</td>
+          <td>${p.contacto ?? '-'}</td>
+          <td>${p.email ?? '-'}</td>
+          <td>${p.telefono ?? '-'}</td>
+          <td class="text-end">${p.leadTimeDias ?? 0}</td>
+          <td><!-- opcional: cantidad de productos --></td>
+          <td><span class="badge bg-${badge}">${p.activo?'Activo':'Inactivo'}</span></td>
+          <td class="text-end">
+            <button class="btn btn-sm ${p.activo?'btn-outline-danger':'btn-outline-success'}"
+                    onclick="toggleProv('${p.id}', ${!p.activo})">
+              ${p.activo?'Desactivar':'Activar'}
+            </button>
+          </td>
+        </tr>`);
+      if (p.activo) {
+        selProv.insertAdjacentHTML('beforeend', `<option value="${p.id}">${p.nombre} (${p.id})</option>`);
+      }
+    }
+  }
+
+  async function loadPedidosTable(){
+    const data = await API.pedidos.list().catch(()=>[]);
+    const tbody = document.getElementById('poBody');
+    tbody.innerHTML = '';
+    for(const o of data){
+      tbody.insertAdjacentHTML('beforeend', `
+        <tr data-ped-row data-po="${o.id||o.po||''}" data-prov="${o.proveedorNombre||o.proveedorId||''}" data-estado="${(o.estado||'').toUpperCase()}">
+          <td>${o.id ?? o.po ?? '-'}</td>
+          <td>${o.proveedorNombre ?? o.proveedorId ?? '-'}</td>
+          <td>${fmtDate(o.fecha)}</td>
+          <td>${fmtDate(o.estimada)}</td>
+          <td>${o.estado ?? '-'}</td>
+          <td class="text-end">${o.itemsCount ?? (o.items ? o.items.length : 0)}</td>
+          <td class="text-end">
+            <!-- Acciones futuras: ver / imprimir / recibir -->
+            <button class="btn btn-sm btn-outline-secondary" disabled>Ver</button>
+          </td>
+        </tr>`);
+    }
+  }
+
+  // Filtros
+  function applyProvFilters(){
+    const txt = (document.getElementById('filtroProvTxt').value || '').toLowerCase();
+    const estado = document.getElementById('filtroProvEstado').value;
+    document.querySelectorAll('[data-prov-row]').forEach(tr=>{
+      const activo = tr.getAttribute('data-activo') === '1';
+      const hayTxt =
+        tr.getAttribute('data-id').toLowerCase().includes(txt) ||
+        tr.getAttribute('data-nombre').toLowerCase().includes(txt) ||
+        tr.getAttribute('data-contacto').toLowerCase().includes(txt) ||
+        tr.getAttribute('data-email').toLowerCase().includes(txt);
+      const hayEstado =
+        estado === '' ||
+        (estado === 'activos' && activo) ||
+        (estado === 'inactivos' && !activo);
+      tr.style.display = (hayTxt && hayEstado) ? '' : 'none';
+    });
+  }
+
+  function applyPedFilters(){
+    const txt = (document.getElementById('filtroPedTxt').value || '').toLowerCase();
+    const est = document.getElementById('filtroPedEstado').value;
+    document.querySelectorAll('[data-ped-row]').forEach(tr=>{
+      const prov = tr.getAttribute('data-prov').toLowerCase();
+      const po   = (tr.getAttribute('data-po')||'').toLowerCase();
+      const estado = tr.getAttribute('data-estado');
+      const okTxt = prov.includes(txt) || po.includes(txt);
+      const okEst = est === '' || est === estado;
+      tr.style.display = (okTxt && okEst) ? '' : 'none';
+    });
+  }
+
+  // Export CSV
+  function exportProvCSV(){
+    const rows = [['ID','Proveedor','Contacto','Email','Teléfono','LeadTime','Estado']];
+    document.querySelectorAll('#provBody tr').forEach(tr=>{
+      if (tr.style.display === 'none') return;
+      const tds = tr.querySelectorAll('td');
+      rows.push([
+        tds[0].textContent.trim(),
+        tds[1].textContent.trim(),
+        tds[2].textContent.trim(),
+        tds[3].textContent.trim(),
+        tds[4].textContent.trim(),
+        tds[5].textContent.trim(),
+        tds[7].innerText.trim()
+      ]);
+    });
+    downloadCSV(rows, 'proveedores.csv');
+  }
+
+  function exportPedCSV(){
+    const rows = [['PO','Proveedor','Fecha','Estimada','Estado','Items']];
+    document.querySelectorAll('#poBody tr').forEach(tr=>{
+      if (tr.style.display === 'none') return;
+      const tds = tr.querySelectorAll('td');
+      rows.push([
+        tds[0].textContent.trim(),
+        tds[1].textContent.trim(),
+        tds[2].textContent.trim(),
+        tds[3].textContent.trim(),
+        tds[4].textContent.trim(),
+        tds[5].textContent.trim()
+      ]);
+    });
+    downloadCSV(rows, 'pedidos.csv');
+  }
+
+  function downloadCSV(rows, fileName){
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = fileName;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  // Toggle activo proveedor
+  async function toggleProv(id, value){
+    try{
+      await API.proveedores.toggle(id, value);
+      await loadProveedoresTable();
+    }catch(e){
+      alert('No se pudo cambiar estado del proveedor');
+      console.error(e);
+    }
+  }
+
+  // Modales
+  function openProveedor(){
+    document.getElementById('titleProv').textContent = 'Nuevo proveedor';
+    document.getElementById('provIdEdit').value = '';
+    document.getElementById('provId').value = '';
+    document.getElementById('provNom').value = '';
+    document.getElementById('provCont').value = '';
+    document.getElementById('provMail').value = '';
+    document.getElementById('provTel').value = '';
+    document.getElementById('provLead').value = '0';
+    document.getElementById('provActivo').value = 'true';
+    document.getElementById('provProds').value = '';
+  }
+
+  function openPedido(){
+    document.getElementById('titlePed').textContent = 'Nuevo pedido';
+    formPedReset();
+  }
+
+  function formPedReset(){
+    document.getElementById('pedProv').value = '';
+    document.getElementById('pedEta').value = '';
+    document.getElementById('pedEstado').value = 'PENDIENTE';
+    document.getElementById('pedItems').value = '';
+  }
+
+  // Submit Proveedor
+  async function onSubmitProveedor(ev){
+    ev.preventDefault();
+    const form = ev.currentTarget;
+    if (!form.checkValidity()){
+      form.classList.add('was-validated');
+      return;
+    }
+    const payload = {
+      id:        document.getElementById('provId').value.trim(),
+      nombre:    document.getElementById('provNom').value.trim(),
+      contacto:  document.getElementById('provCont').value.trim(),
+      email:     document.getElementById('provMail').value.trim(),
+      telefono:  document.getElementById('provTel').value.trim(),
+      leadTimeDias: Number(document.getElementById('provLead').value || 0),
+      activo:    document.getElementById('provActivo').value === 'true'
+    };
+    try{
+      await API.proveedores.create(payload);
+      const modal = bootstrap.Modal.getInstance(document.getElementById('modalProveedor'));
+      modal && modal.hide();
+      await loadProveedoresTable();
+    }catch(e){
+      alert('No se pudo guardar el proveedor');
+      console.error(e);
+    }
+  }
+
+  // Submit Pedido
+  async function onSubmitPedido(ev){
+    ev.preventDefault();
+    const form = ev.currentTarget;
+    if (!form.checkValidity()){
+      form.classList.add('was-validated');
+      return;
+    }
+    const proveedorId = document.getElementById('pedProv').value;
+    const estimada    = document.getElementById('pedEta').value; // yyyy-mm-dd
+    const estado      = document.getElementById('pedEstado').value; // PENDIENTE/RECIBIDO/CANCELADO
+    const lines = document.getElementById('pedItems').value.split('\n').map(s=>s.trim()).filter(Boolean);
+
+    const items = [];
+    for(const ln of lines){
+      // Formato: SKU x Cantidad
+      const m = ln.match(/^(.+?)\s*x\s*(\d+)$/i);
+      if (m){
+        items.push({ sku: m[1].trim(), cantidad: Number(m[2]) });
+      }
+    }
+    if (items.length === 0){
+      alert('Agrega ítems con formato: SKU x Cantidad');
+      return;
+    }
+
+    const payload = {
+      proveedorId,
+      estimada,
+      estado,         // el backend puede ignorarlo y asumir PENDIENTE
+      items
+    };
+
+    try{
+      await API.pedidos.create(payload);
+      const modal = bootstrap.Modal.getInstance(document.getElementById('modalPedido'));
+      modal && modal.hide();
+      await loadPedidosTable();
+    }catch(e){
+      alert('No se pudo guardar el pedido');
+      console.error(e);
+    }
+  }
+  </script>
+</body>
+</html>

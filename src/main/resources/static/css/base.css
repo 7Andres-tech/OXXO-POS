@@ -1,0 +1,32 @@
+:root{
+  --oxxo-red:#cc0000;
+  --oxxo-yellow:#ffe600;
+  --bg-app:#fff5e1;
+}
+
+/* Fondo general (sin overflow-x:hidden para no recortar tablas) */
+html,body{ margin:0; padding:0; background:var(--bg-app); }
+
+/* Navbar */
+.navbar{ background:var(--oxxo-red)!important; }
+.navbar .nav-link, .navbar .navbar-brand{ color:#fff!important; }
+.navbar .nav-link.active{ background:rgba(255,255,255,.15); border-radius:.5rem; }
+
+/* Tarjetas + tablas */
+.card{ border-radius:.8rem; }
+thead.table-dark{ position:sticky; top:0; z-index:1; }
+.table-responsive{ overflow-x:auto; }            /* solo la tabla scrollea */
+.table td input[type="number"]{ max-width:90px; }/* inputs compactos */
+
+/* Columnas / utilidades */
+.col-actions{ width:180px; }
+.nowrap{ white-space:nowrap; }
+.badge-pill{ border-radius:20px; padding:.35rem .6rem; }
+
+/* Helpers */
+.small-muted{ color:#6c757d; font-size:.85rem; }
+.badge-sku{ font-family:monospace; }
+.ticket{ font-family:monospace; white-space:pre; }
+
+/* Anclas con desplazamiento (reportes/bloques con #) */
+.section-title{ scroll-margin-top:90px; }

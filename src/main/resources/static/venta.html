@@ -1,0 +1,1223 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>OXXO | Ventas (POS)</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/venta.css">
+</head>
+<body>
+  <script>
+    document.addEventListener('DOMContentLoaded', () =>
+      Auth.requireAuth(['CAJERO', 'ADMIN'])
+    );
+  </script>
+
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+    <div class="container-fluid">
+      <a class="navbar-brand d-flex align-items-center" href="inicio.html" aria-label="Ir al inicio">
+        <img src="../img/OXXO-Logo.wine.png" class="brand-logo" alt="OXXO" width="76">
+      </a>
+      <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div id="nav" class="collapse navbar-collapse">
+        <ul class="navbar-nav me-auto">
+          <!-- visibles para ambos -->
+          <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="inicio.html">Inicio</a></li>
+          <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="venta.html">Ventas</a></li>
+          <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="clientes.html">Clientes frecuentes</a></li>
+
+          <!-- solo ADMIN -->
+          <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="inventario.html">Inventario</a></li>
+          <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="productos.html">Productos</a></li>
+          <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="proveedores.html">Proveedores</a></li>
+          <li class="nav-item dropdown" data-roles="ADMIN">
+            <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#">Reportes</a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="reportes.html#ventas">R. Ventas</a></li>
+              <li><a class="dropdown-item" href="reportes.html#clientes">R. Clientes</a></li>
+              <li><a class="dropdown-item" href="reportes.html#productos">R. Productos</a></li>
+            </ul>
+          </li>
+          <li class="nav-item" data-roles="ADMIN,CAJERO">
+            <a class="nav-link" href="cierre.html">Cierre de caja</a>
+          </li>
+        </ul>
+
+        <div class="d-flex align-items-center gap-2">
+          <span class="navbar-text small">
+            Hola, <strong id="navUserName">—</strong>
+          </span>
+          <a class="btn btn-outline-light btn-sm" href="cierre.html" data-roles="ADMIN,CAJERO">
+            Cerrar turno
+          </a>
+          <button class="btn btn-outline-light btn-sm" type="button" onclick="Auth.logout()">Salir</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- CONTENT -->
+  <main class="container-fluid with-sidebar">
+    <div class="row">
+      <!-- IZQUIERDA -->
+      <div class="col-12 col-lg-7 px-3 px-md-4">
+        <div class="pt-3 pb-2 border-bottom">
+          <h1 class="h4 fw-bold text-danger m-0">🛒 Punto de Venta</h1>
+          <small class="text-muted">
+            Cajero: <span id="lblCajero">Cajero 01</span> •
+            Ticket: <span id="lblTicket">TCK-0001</span>
+          </small>
+        </div>
+
+        <div class="card shadow-sm mt-3">
+          <div class="card-body">
+
+            <div class="row g-2 mb-3">
+              <div class="col-12 col-md-7">
+                <label class="form-label">Cliente (DNI / nombre)</label>
+                <div class="autocomplete-wrap">
+                  <input id="cliInput" class="form-control"
+                         placeholder="Mostrador (sin cliente)" autocomplete="off">
+                  <div id="cliList" class="list-group d-none"
+                       role="listbox" aria-label="Clientes"></div>
+                </div>
+                <div class="small-muted mt-1">
+                  Escribe para buscar. Enter crea rápido (DNI Nombre).
+                </div>
+              </div>
+              <div class="col-12 col-md-5 d-flex align-items-end">
+                <div class="small">
+                  Cliente actual: <strong id="lblCliente">Mostrador</strong>
+                </div>
+              </div>
+            </div>
+
+            <form id="formScan" class="row g-2"> 
+              <div class="col-12 col-md-7">
+                <label class="form-label">SKU / Código de barras / Nombre</label>
+                <div class="autocomplete-wrap">
+                  <input id="inCode" class="form-control" placeholder="Escribe o escanea…" autocomplete="off" autofocus>
+                  <div id="autoList" class="list-group d-none" role="listbox" aria-label="Sugerencias"></div>
+                </div>
+                <div class="small-muted mt-1">Usa ↑/↓ y Enter. Click para elegir.</div>
+              </div>
+              <div class="col-6 col-md-2">
+                <label class="form-label">Cantidad</label>
+                <input id="inQty" type="number" class="form-control" min="1" value="1">
+              </div>
+              <div class="col-6 col-md-3 d-grid">
+                <label class="form-label">&nbsp;</label>
+                <button class="btn btn-danger">Agregar</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="table-responsive mt-3" style="max-height:420px;">
+          <table class="table table-hover align-middle" id="tbCarrito">
+            <thead class="table-dark">
+              <tr>
+                <th>SKU</th>
+                <th>Producto</th>
+                <th class="text-end">P. Unit</th>
+                <th class="text-end" style="width:120px;">Cantidad</th>
+                <th class="text-end">Subtotal</th>
+                <th class="text-end">Acciones</th>
+              </tr>
+            </thead>
+            <tbody><!-- JS --></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- DERECHA -->
+      <div class="col-12 col-lg-5 px-3 px-md-4">
+        <div class="card shadow-sm mt-4 mt-lg-5">
+          <div class="card-body">
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Items</span><strong id="totItems">0</strong>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">Subtotal</span><strong id="totSub">$0.00</strong>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted">IGV/IVA</span><strong id="totTax">$0.00</strong>
+            </div>
+            <div class="d-flex justify-content-between fs-4 fw-bold border-top pt-2 mt-2">
+              <span>Total</span><span id="totAll">$0.00</span>
+            </div>
+
+            <div class="d-grid gap-2 mt-3">
+              <button class="btn btn-success btn-lg" id="btnCobrar" data-bs-toggle="modal" data-bs-target="#modalPago" disabled>
+                Cobrar
+              </button>
+              <button class="btn btn-outline-secondary" id="btnVaciar" disabled>Vaciar carrito</button>
+             
+            </div>
+          </div>
+        </div>
+
+        <!-- Tickets recientes -->
+        <div class="card shadow-sm mt-3">
+          <div class="card-header bg-light fw-semibold">🧾 Tickets recientes</div>
+          <div class="card-body p-0">
+            <div class="table-responsive" style="max-height:220px;">
+              <table class="table table-sm align-middle mb-0" id="tbTickets">
+                <thead class="table-light">
+                  <tr>
+                    <th>Ticket</th>
+                    <th>Fecha</th>
+                    <th>Pago</th>
+                    <th class="text-end">Total</th>
+                    <th class="text-end">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody><!-- JS --></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL PAGO -->
+  <div class="modal fade" id="modalPago" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog"><div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">Cobro</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="formPago" class="row g-2 needs-validation" novalidate>
+          <div class="col-12">
+            <div class="d-flex justify-content-between">
+              <span>Total a cobrar</span><strong id="pagoTotal">$0.00</strong>
+            </div>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Medio de pago</label>
+            <select id="pagoMedio" class="form-select" required>
+              <option value="">Elegir…</option>
+              <option>Efectivo</option>
+              <option>Tarjeta</option>
+              <option>Yape/Plin</option>
+            </select>
+            <div class="invalid-feedback">Selecciona un medio de pago.</div>
+          </div>
+          <div class="col-6">
+            <label class="form-label">Recibido (efectivo)</label>
+            <input id="pagoRec" type="number" class="form-control" min="0" step="0.01" placeholder="0.00">
+          </div>
+          <div class="col-6">
+            <label class="form-label">Vuelto</label>
+            <input id="pagoVuelto" class="form-control" disabled value="$0.00">
+          </div>
+          <div class="col-12 d-grid">
+            <button class="btn btn-danger btn-lg">Confirmar cobro</button>
+          </div>
+        </form>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- MODAL TICKET -->
+  <div class="modal fade" id="modalTicket" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog"><div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title">Ticket</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="ticketArea" class="ticket"></div>
+        <div class="d-grid mt-3">
+          <button class="btn btn-outline-secondary" id="btnPrint">Imprimir</button>
+        </div>
+      </div>
+    </div></div>
+  </div>
+
+ 
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/auth.js" defer></script>
+  <script src="/js/api.js" defer></script>
+
+  <script>
+    'use strict';
+
+    /* ================================
+       Auth headers para llamar al backend
+    ==================================*/
+    function authHeadersJson() {
+      const h = (window.Auth && typeof Auth.authHeader === 'function')
+        ? Auth.authHeader()        // { Authorization: 'Bearer xxx' }
+        : {};
+      return { 'Content-Type': 'application/json', ...h };
+    }
+
+    /* ================================
+       Utils comunes (PEN, DOM, fechas)
+    ==================================*/
+    const PEN   = new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' });
+    const money = v => PEN.format(Number(v) || 0);
+    const $  = s => document.querySelector(s);
+    const $$ = s => document.querySelectorAll(s);
+    const parseNum = v => isNaN(parseFloat(v)) ? 0 : parseFloat(v);
+    function nowISO() {
+      const d = new Date();
+      return d.toISOString().slice(0, 16).replace('T', ' ');
+    }
+    function saveLS(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+
+    /* ================================
+       Endpoints (autodetección)
+    ==================================*/
+    const Endpoints = {
+      productos: null,
+      inventario: null,
+      inventarioMov: null,
+      ventas: null,
+      ventasDetalle: null
+    };
+
+    async function resolveFirst(paths) {
+      for (const p of paths) {
+        try {
+          const r = await fetch(p, { method: 'HEAD', headers: authHeadersJson() });
+          if (r.ok) return p;
+        } catch {}
+        try {
+          const r = await fetch(p, { headers: authHeadersJson() });
+          if (r.ok) return p;
+        } catch {}
+      }
+      return null;
+    }
+
+    async function resolveAll() {
+      Endpoints.productos     = await resolveFirst(['/api/productos', '/api/v1/productos', '/productos']);
+      Endpoints.inventario    = await resolveFirst(['/api/inventario', '/api/v1/inventario', '/inventario', '/api/items']);
+      Endpoints.inventarioMov = await resolveFirst(['/api/inventario/movimientos', '/api/v1/inventario/movimientos', '/inventario/movimientos']);
+      Endpoints.ventas        = await resolveFirst(['/api/ventas', '/api/v1/ventas', '/ventas']);
+      Endpoints.ventasDetalle = await resolveFirst(['/api/ventas/detalle', '/api/v1/ventas/detalle', '/ventas/detalle']);
+    }
+
+    /* Respuestas flexibles -> array */
+    async function getArray(url) {
+      if (!url) return [];
+      const r = await fetch(url, { headers: authHeadersJson() });
+      if (!r.ok) return [];
+      const j = await r.json();
+      if (Array.isArray(j)) return j;
+      if (Array.isArray(j?.content)) return j.content;
+      if (Array.isArray(j?.items))   return j.items;
+      if (Array.isArray(j?.data))    return j.data;
+      return [];
+    }
+
+    /* POST seguro con JWT */
+    async function postJson(url, body) {
+      if (!url) throw new Error('No URL');
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: authHeadersJson(),
+        body: JSON.stringify(body)
+      });
+      if (!r.ok) {
+        const txt = await r.text().catch(() => '');
+        throw new Error(url + ' -> ' + r.status + ' ' + txt);
+      }
+      try { return await r.json(); } catch { return {}; }
+    }
+
+    /* ================================
+       LocalStorage (fallback)
+    ==================================*/
+    const KEYS_CATALOGO = ['catalogo_productos', 'productos_data', 'productos', 'productosLS'];
+    const LS_INV   = 'inventario_data';
+    const LS_MOV   = 'inventario_movs';
+    const LS_VTUR  = 'ventasTurno';
+    const LS_VHIST = 'ventasHist';
+    const LS_SEQ   = 'seqTicket';
+
+    function normalizeCatalog(arr) {
+      return (arr || []).map(o => ({
+        sku:       o?.sku ?? o?.SKU ?? o?.codigo ?? o?.code ?? '',
+        barras:    o?.barras ?? o?.barcode ?? o?.codigo_barras ?? '',
+        nombre:    o?.nombre ?? o?.name ?? o?.producto ?? '',
+        categoria: o?.categoria ?? o?.category ?? 'General',
+        proveedor: o?.proveedor ?? o?.vendor ?? '—',
+        precio:    Number(o?.precio ?? o?.price ?? 0),
+        costo:     Number(o?.costo  ?? o?.cost  ?? 0),
+        // acá ya traemos si está activo/inactivo desde el backend
+        activo:    ('activo' in (o || {})) ? !!o.activo : true
+      })).filter(x => x.sku && x.nombre);
+    }
+
+    function loadCatalogLS() {
+      for (const k of KEYS_CATALOGO) {
+        try {
+          const v = JSON.parse(localStorage.getItem(k) || '');
+          if (Array.isArray(v) && v.length) return normalizeCatalog(v);
+        } catch {}
+      }
+      // exploración libre
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        try {
+          const v = JSON.parse(localStorage.getItem(k) || '');
+          if (Array.isArray(v) && v.some(o => o && typeof o === 'object' && ('sku' in o || 'SKU' in o))) {
+            const norm = normalizeCatalog(v);
+            localStorage.setItem('catalogo_productos', JSON.stringify(norm));
+            return norm;
+          }
+        } catch {}
+      }
+      return [];
+    }
+
+    /* ================================
+       Estado
+    ==================================*/
+    let catalogo = [], inventario = [], movimientos = [], ventasTurno = [], ventasHist = [];
+    let seq = 0, ticketId = 'TCK-0001';
+    let CAJERO = localStorage.getItem('cajeroNombre') || 'Cajero 01';
+
+    let CLIENTES = [];
+let CLIENTE_ACTUAL = { doc: null, nombre: 'Mostrador' };
+
+    /* ================================
+       Inicio
+    ==================================*/
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Marca cajero
+      $('#lblCajero').textContent = CAJERO;
+
+      await resolveAll();
+
+      // Catálogo / inventario desde API con fallback a LS
+      try { catalogo = normalizeCatalog(await getArray(Endpoints.productos)); }
+      catch { catalogo = loadCatalogLS(); }
+
+      try { inventario = await getArray(Endpoints.inventario); }
+      catch { inventario = JSON.parse(localStorage.getItem(LS_INV) || '[]'); }
+
+      movimientos = JSON.parse(localStorage.getItem(LS_MOV)  || '[]');
+      ventasTurno = JSON.parse(localStorage.getItem(LS_VTUR) || '[]');
+      ventasHist  = JSON.parse(localStorage.getItem(LS_VHIST) || '[]');
+      seq         = parseInt(localStorage.getItem(LS_SEQ) || '0', 10);
+      ticketId    = nextTicketId();
+      $('#lblTicket').textContent = ticketId;
+
+      // NUEVO: cargar clientes y preparar autocomplete
+  await loadClientesPOS();
+  setupClienteAutocomplete();
+
+      syncInventoryToCatalog();
+      renderCart();
+      renderTicketsRecientes();
+
+      // Listeners UI
+      $('#formScan').addEventListener('submit', submitScan);
+      $('#btnVaciar').addEventListener('click', vaciarCarrito);
+      $('#pagoMedio').addEventListener('change', calcVuelto);
+      $('#pagoRec').addEventListener('input',  calcVuelto);
+      $('#formPago').addEventListener('submit', cobrar);
+      $('#btnPrint').addEventListener('click', imprimirTicket);
+
+      
+      
+
+      // Autocomplete
+      setupAutocomplete();
+    });
+
+    /* ================================
+       Helpers POS
+    ==================================*/
+    function nextTicketId() {
+      seq += 1;
+      localStorage.setItem(LS_SEQ, String(seq));
+      return 'TCK-' + String(seq).padStart(4, '0');
+    }
+
+    function syncInventoryToCatalog() {
+      const invSKUs = new Set(inventario.map(i => String(i.sku)));
+      let added = 0;
+      for (const p of (catalogo || [])) {
+        if (!p?.sku) continue;
+        if (!invSKUs.has(String(p.sku))) {
+          inventario.push({
+            sku: p.sku,
+            nombre: p.nombre || p.sku,
+            categoria: p.categoria || 'General',
+            proveedor: p.proveedor || '—',
+            stock: 0,
+            minimo: 0,
+            vence: ''
+          });
+          added++;
+        }
+      }
+      if (added > 0) saveLS(LS_INV, inventario);
+    }
+
+    /* ================================
+   Cliente actual (POS)
+==================================*/
+function renderClienteActual() {
+  const span = document.getElementById('lblCliente');
+  if (!span) return;
+  if (!CLIENTE_ACTUAL.doc) {
+    span.textContent = 'Mostrador';
+  } else {
+    span.textContent = `${CLIENTE_ACTUAL.nombre} (${CLIENTE_ACTUAL.doc})`;
+  }
+}
+
+async function loadClientesPOS() {
+  try {
+    const r = await fetch('/api/clientes', { headers: authHeadersJson() });
+    if (!r.ok) throw new Error('Error clientes');
+    CLIENTES = await r.json();
+  } catch (err) {
+    console.warn('No se pudieron cargar clientes:', err);
+    CLIENTES = [];
+  }
+  renderClienteActual();
+}
+
+
+    /* ================================
+       Autocomplete & búsqueda
+    ==================================*/
+    const inCode = $('#inCode');
+    const autoList = $('#autoList');
+    let autoIndex = -1;
+
+    // hacemos que la lista tenga scroll
+    if (autoList) {
+      autoList.style.maxHeight = '220px';
+      autoList.style.overflowY = 'auto';
+    }
+
+    function normalizeQuery(val) {
+      let s = (val || '').trim();
+      if (s.includes(' - ')) s = s.split(' - ')[0].trim();
+      return s.split(/[;,]/)[0].trim();
+    }
+
+    // Ahora:
+    // - si hay texto -> filtra
+    // - si está vacío -> devuelve TODO el catálogo (para mostrar al hacer click)
+    function getMatches(q) {
+      const s = (q || '').toLowerCase().trim();
+
+      // sin texto: todos los productos, ordenados por nombre
+      if (!s) {
+        return catalogo
+          .slice()
+          .sort((a,b) => (a.nombre || '').localeCompare(b.nombre || ''))
+          .slice(0, 40); // límite por si hay muchos
+      }
+
+      const by = [
+        catalogo.filter(p => String(p.sku).toLowerCase() === s),
+        catalogo.filter(p => String(p.barras || '').toLowerCase() === s),
+        catalogo.filter(p => String(p.nombre || '').toLowerCase().startsWith(s)),
+        catalogo.filter(p =>
+          String(p.sku).toLowerCase().includes(s) ||
+          String(p.barras || '').toLowerCase().includes(s) ||
+          String(p.nombre || '').toLowerCase().includes(s)
+        )
+      ];
+      const seen = new Set(), out = [];
+      by.flat().forEach(p => {
+        if (!seen.has(p.sku)) {
+          seen.add(p.sku);
+          out.push(p);
+        }
+      });
+      return out.slice(0, 40);
+    }
+
+    function hl(text, q) {
+      if (!text) return '';
+      if (!q) return text; // sin highlight si no hay query
+      const i = text.toLowerCase().indexOf(q.toLowerCase());
+      return i < 0
+        ? text
+        : text.slice(0, i) + '<mark>' +
+          text.slice(i, i + q.length) +
+          '</mark>' + text.slice(i + q.length);
+    }
+
+    function renderAutoList(q) {
+      const m = getMatches(q);
+      autoList.innerHTML = '';
+      autoIndex = -1;
+      if (!m.length) {
+        autoList.classList.add('d-none');
+        return;
+      }
+
+      m.forEach(p => {
+        const inactiveClass = p.activo ? '' : ' bg-light text-danger';
+        const statusBadge = p.activo ? ''
+          : '<span class="badge bg-danger ms-2">Inactivo</span>';
+
+        autoList.insertAdjacentHTML('beforeend', `
+          <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-start${inactiveClass}"
+               data-sku="${p.sku}" data-activo="${p.activo ? 'true' : 'false'}">
+            <div>
+              <div class="fw-semibold">${hl(p.nombre || p.sku, q)}</div>
+              <div class="small-muted">
+                <span class="badge text-bg-light">SKU: ${hl(p.sku, q)}</span>
+                <span class="ms-2">Barras: ${hl(p.barras || '—', q)}</span>
+                <span class="ms-2">${p.categoria || '—'}</span>
+                ${statusBadge}
+              </div>
+            </div>
+            <div class="text-end">
+              <div class="fw-semibold">${money(p.precio)}</div>
+              <div class="small-muted">${p.proveedor || '—'}</div>
+            </div>
+          </div>
+        `);
+      });
+      autoList.classList.remove('d-none');
+    }
+
+    function hideAuto() {
+      autoList.classList.add('d-none');
+      autoIndex = -1;
+    }
+
+    function selectIndex(i) {
+      const it = autoList.querySelectorAll('.list-group-item');
+      it.forEach(n => n.classList.remove('active'));
+      if (i >= 0 && i < it.length) {
+        it[i].classList.add('active');
+        it[i].scrollIntoView({ block: 'nearest' });
+        autoIndex = i;
+      }
+    }
+
+    // Al elegir un item desde la lista
+    function chooseItem(sku) {
+      const qty = $('#inQty').value || 1;
+      addToCart(sku, qty);   // addToCart ahora valida si está activo
+      inCode.value = '';
+      hideAuto();
+      inCode.focus();
+    }
+
+    function setupAutocomplete() {
+      if (!inCode || !autoList) return;
+
+      // Al escribir: siempre renderizamos (si está vacío, muestra todo)
+      inCode.addEventListener('input', () => {
+        const q = inCode.value;
+        renderAutoList(q);
+      });
+
+      // NUEVO: al hacer foco, mostrar todos los productos
+      inCode.addEventListener('focus', () => {
+        renderAutoList(inCode.value); // si está vacío, getMatches devuelve todos
+      });
+
+      inCode.addEventListener('keydown', e => {
+        if (autoList.classList.contains('d-none')) return;
+        const it = autoList.querySelectorAll('.list-group-item');
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          selectIndex(Math.min(autoIndex + 1, it.length - 1));
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          selectIndex(Math.max(autoIndex - 1, 0));
+        } else if (e.key === 'Enter') {
+          if (autoIndex >= 0) {
+            e.preventDefault();
+            chooseItem(it[autoIndex].dataset.sku);
+          }
+        } else if (e.key === 'Escape') {
+          hideAuto();
+        }
+      });
+
+      autoList.addEventListener('mousedown', e => {
+        const row = e.target.closest('.list-group-item');
+        if (row) chooseItem(row.dataset.sku);
+      });
+
+      document.addEventListener('click', e => {
+        if (!e.target.closest('.autocomplete-wrap')) hideAuto();
+      });
+    }
+
+    /* ================================
+   Autocomplete CLIENTES (POS)
+==================================*/
+const cliInput = document.getElementById('cliInput');
+const cliList  = document.getElementById('cliList');
+let cliIndex   = -1;
+
+if (cliList) {
+  cliList.style.maxHeight = '220px';
+  cliList.style.overflowY = 'auto';
+}
+
+function matchClientes(q) {
+  const s = (q || '').toLowerCase().trim();
+  if (!s) return CLIENTES.slice(0, 30);
+  return CLIENTES
+    .filter(c =>
+      (c.doc || '').toLowerCase().includes(s) ||
+      (c.nombre || '').toLowerCase().includes(s)
+    )
+    .slice(0, 30);
+}
+
+function renderCliList(q) {
+  if (!cliList) return;
+  const m = matchClientes(q);
+  cliList.innerHTML = '';
+  cliIndex = -1;
+  if (!m.length) {
+    cliList.classList.add('d-none');
+    return;
+  }
+  m.forEach(c => {
+    cliList.insertAdjacentHTML('beforeend', `
+      <div class="list-group-item list-group-item-action"
+           data-doc="${c.doc || ''}"
+           data-nom="${c.nombre || ''}">
+        <div class="fw-semibold">${c.nombre || 'Cliente sin nombre'}</div>
+        <div class="small-muted">
+          DNI: ${c.doc || '—'}
+          · Compras: ${c.compras ?? 0}
+          · Puntos: ${c.puntos ?? 0}
+        </div>
+      </div>
+    `);
+  });
+  cliList.classList.remove('d-none');
+}
+
+function hideCliList() {
+  if (!cliList) return;
+  cliList.classList.add('d-none');
+  cliIndex = -1;
+}
+
+function selectCliIndex(i) {
+  const it = cliList.querySelectorAll('.list-group-item');
+  it.forEach(n => n.classList.remove('active'));
+  if (i >= 0 && i < it.length) {
+    it[i].classList.add('active');
+    it[i].scrollIntoView({ block: 'nearest' });
+    cliIndex = i;
+  }
+}
+
+function elegirCliente(doc, nom) {
+  CLIENTE_ACTUAL = { doc: doc || null, nombre: nom || 'Mostrador' };
+  renderClienteActual();
+  if (cliInput) cliInput.value = '';
+  hideCliList();
+}
+
+async function crearClienteRapido(descriptor) {
+  const txt = (descriptor || '').trim();
+  if (!txt) return;
+  const partes = txt.split(/\s+/);
+  const doc = partes[0];
+  const nombre = partes.slice(1).join(' ') || 'Cliente sin nombre';
+  if (!doc) {
+    alert('Escribe al menos el DNI.');
+    return;
+  }
+
+   // NUEVO: si ya existe, solo lo seleccionamos y no creamos nada
+   const existente = CLIENTES.find(c => (c.doc || '') === doc);
+  if (existente) {
+    elegirCliente(existente.doc, existente.nombre);
+    return;
+  }
+
+  if (!confirm(`Crear cliente rápido?\nDNI: ${doc}\nNombre: ${nombre}`)) return;
+
+  try {
+    const r = await fetch('/api/clientes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeadersJson() },
+      body: JSON.stringify({
+        doc,
+        nombre,
+        telefono: null,
+        email: null,
+        puntos: 0
+      })
+    });
+    if (!r.ok) {
+      const txt = await r.text().catch(() => '');
+      throw new Error(txt || r.statusText);
+    }
+    const cli = await r.json();
+    CLIENTES.push(cli);
+    elegirCliente(cli.doc, cli.nombre);
+  } catch (err) {
+    alert('No se pudo crear el cliente: ' + (err.message || err));
+  }
+}
+
+function setupClienteAutocomplete() {
+  if (!cliInput || !cliList) return;
+
+  cliInput.addEventListener('input', () => {
+    renderCliList(cliInput.value);
+  });
+
+  cliInput.addEventListener('focus', () => {
+    renderCliList(cliInput.value);
+  });
+
+  cliInput.addEventListener('keydown', e => {
+  const q = (cliInput.value || '').trim().toLowerCase();
+
+  // Si no hay lista visible
+  if (cliList.classList.contains('d-none')) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+
+      // 1) Si ya existe cliente exacto (DNI o nombre) → seleccionarlo
+      const exact = CLIENTES.find(c =>
+        (c.doc || '').toLowerCase() === q ||
+        (c.nombre || '').toLowerCase() === q
+      );
+      if (exact) {
+        elegirCliente(exact.doc, exact.nombre);
+        return;
+      }
+
+      // 2) Si no existe → crear rápido
+      crearClienteRapido(cliInput.value);
+    }
+    return;
+  }
+
+  const it = cliList.querySelectorAll('.list-group-item');
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    selectCliIndex(Math.min(cliIndex + 1, it.length - 1));
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    selectCliIndex(Math.max(cliIndex - 1, 0));
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+
+    // Si el usuario ya bajó con ↑/↓, usa ese
+    if (cliIndex >= 0) {
+      const item = it[cliIndex];
+      elegirCliente(item.dataset.doc, item.dataset.nom);
+      return;
+    }
+
+    // Si no hay selección pero hay SOLO un resultado → usarlo
+    if (it.length === 1) {
+      const item = it[0];
+      elegirCliente(item.dataset.doc, item.dataset.nom);
+      return;
+    }
+
+    // Si hay varios resultados y no eligió ninguno → no crear, que elija
+    if (it.length > 1) {
+      return;
+    }
+
+    // Si no hay resultados en la lista → crear rápido
+    crearClienteRapido(cliInput.value);
+  } else if (e.key === 'Escape') {
+    hideCliList();
+  }
+});
+
+
+  cliList.addEventListener('mousedown', e => {
+    const row = e.target.closest('.list-group-item');
+    if (row) {
+      elegirCliente(row.dataset.doc, row.dataset.nom);
+    }
+  });
+
+  // El listener global que ya tienes para productos
+  // también cerrará esta lista porque comparte la clase .autocomplete-wrap
+}
+
+
+    /* ================================
+       Carrito
+    ==================================*/
+    let carrito = [];
+
+    function lookupProduct(input) {
+      const q = normalizeQuery(input).toLowerCase();
+      if (!q) return null;
+      return catalogo.find(x => String(x.sku).toLowerCase() === q ||
+                                String(x.barras || '').toLowerCase() === q) ||
+             catalogo.find(x => String(x.nombre || '').toLowerCase() === q) ||
+             catalogo.find(x => String(x.nombre || '').toLowerCase().includes(q)) || null;
+    }
+
+    function addToCart(codeOrSku, qty) {
+      const p = lookupProduct(String(codeOrSku));
+      if (!p) return alert('Producto no encontrado en Catálogo. Ve a Productos y guárdalo.');
+
+      // *** aquí bloqueamos productos inactivos ***
+      if (!p.activo) {
+        alert('Este producto está INACTIVO y no se puede vender.');
+        return;
+      }
+
+      const price = Number(p.precio) || 0;
+      qty = Math.max(1, parseInt(qty || 1, 10));
+      const ex = carrito.find(x => x.sku === p.sku);
+      if (ex) ex.qty += qty;
+      else carrito.push({ sku: p.sku, nombre: p.nombre || p.sku, precio: price, qty });
+      renderCart();
+    }
+
+    function removeFromCart(sku) {
+      carrito = carrito.filter(x => x.sku !== sku);
+      renderCart();
+    }
+
+    function updateQty(sku, qty) {
+      const it = carrito.find(x => x.sku === sku);
+      if (!it) return;
+      it.qty = Math.max(1, parseInt(qty || 1, 10));
+      renderTotals();
+    }
+
+    function renderCart() {
+      const tb = $('#tbCarrito tbody');
+      tb.innerHTML = '';
+      carrito.forEach(it => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${it.sku}</td>
+          <td>${it.nombre}</td>
+          <td class="text-end">${money(it.precio)}</td>
+          <td class="text-end">
+            <input type="number" min="1"
+                   class="form-control form-control-sm text-end"
+                   value="${it.qty}"
+                   onchange="updateQty('${it.sku}', this.value)">
+          </td>
+          <td class="text-end">${money(it.precio * it.qty)}</td>
+          <td class="text-end">
+            <button class="btn btn-sm btn-outline-danger" onclick="removeFromCart('${it.sku}')">
+              Quitar
+            </button>
+          </td>
+        `;
+        tb.appendChild(tr);
+      });
+      renderTotals();
+    }
+
+    function renderTotals() {
+      const items = carrito.reduce((a, b) => a + b.qty, 0);
+      const sub   = carrito.reduce((a, b) => a + b.precio * b.qty, 0);
+      const TAX_RATE = 0; // si quieres IGV, cámbialo aquí
+      const tax   = sub * TAX_RATE;
+      const total = sub + tax;
+
+      $('#totItems').textContent = items;
+      $('#totSub').textContent   = money(sub);
+      $('#totTax').textContent   = money(tax);
+      $('#totAll').textContent   = money(total);
+      $('#btnCobrar').disabled   = carrito.length === 0;
+      $('#btnVaciar').disabled   = carrito.length === 0;
+      $('#pagoTotal').textContent = money(total);
+      calcVuelto();
+    }
+
+    function submitScan(e) {
+      e.preventDefault();
+      const val = inCode.value;
+      const qty = $('#inQty').value;
+      if (!val.trim()) return inCode.focus();
+      addToCart(val, qty);  // aquí también aplica el bloqueo por inactivo
+      inCode.value = '';
+      $('#inQty').value = 1;
+      hideAuto();
+      inCode.focus();
+    }
+
+    function vaciarCarrito() {
+      if (!carrito.length) return;
+      if (confirm('Vaciar carrito?')) {
+        carrito = [];
+        renderCart();
+      }
+    }
+
+    function calcVuelto() {
+  const medio     = $('#pagoMedio').value;
+  const inpRec    = $('#pagoRec');
+  const inpVuelto = $('#pagoVuelto');
+  const total     = parseNum($('#totAll').textContent.replace(/[^\d.]/g, ''));
+
+  if (medio === 'Efectivo') {
+    // Solo en efectivo se ingresa monto recibido y se calcula vuelto
+    inpRec.disabled    = false;
+    inpRec.placeholder = 'Ingrese monto recibido';
+    const recibido = parseNum(inpRec.value);
+    const vuelto   = Math.max(0, recibido - total);
+    inpVuelto.value = money(vuelto);
+  } else {
+    // Tarjeta / Yape / Plin: pago exacto, sin vuelto
+    inpRec.disabled    = true;
+    inpRec.value       = '';
+    inpRec.placeholder = 'No aplica';
+    inpVuelto.value    = money(0);
+  }
+}
+
+    /* ================================
+       Cobro -> API + fallback LS
+    ==================================*/
+    async function cobrar(e) {
+      e.preventDefault();
+      const f = e.currentTarget;
+      if (!f.checkValidity()) {
+        f.classList.add('was-validated');
+        return;
+      }
+      if (!carrito.length) return alert('El carrito está vacío.');
+
+      const medio = $('#pagoMedio').value;
+      const total = parseNum($('#totAll').textContent.replace(/[^\d.]/g, ''));
+
+      const ticket = {
+  id: ticketId,
+  ticket: ticketId,
+  ts: nowISO(),
+  cajero: CAJERO,
+  medio_pago: medio,
+  total,
+  tipo: 'venta',
+  clienteDoc: CLIENTE_ACTUAL.doc,
+  clienteNombre: CLIENTE_ACTUAL.nombre,
+  items: carrito.map(it => ({
+    sku: it.sku,
+    nombre: it.nombre,
+    cantidad: it.qty,
+    precio: it.precio
+  }))
+};
+
+      // 1) Llamada API real al backend (VentaRequest)
+      try {
+        if (Endpoints.ventas) {
+          const body = {
+            medioPago: medio,
+            items: carrito.map(it => ({
+              sku: it.sku,
+              cantidad: it.qty
+            }))
+          };
+          await postJson(Endpoints.ventas, body);
+        }
+      } catch (err) {
+        console.warn('POST API (venta):', err?.message);
+      }
+
+      // 2) Fallback / espejo en LocalStorage (para ticket local)
+      ventasTurno.push({
+        monto: total,
+        pago: medio,
+        tipo: 'venta',
+        ticket: ticket.ticket,
+        ts: ticket.ts
+      });
+      saveLS(LS_VTUR, ventasTurno);
+      ventasHist.push(ticket);
+      saveLS(LS_VHIST, ventasHist);
+
+      // Inventario local (solo para simulación en LS)
+      for (const it of carrito) {
+        let inv = inventario.find(x => String(x.sku) === String(it.sku));
+        if (!inv) {
+          inv = {
+            sku: it.sku,
+            nombre: it.nombre,
+            categoria: 'General',
+            proveedor: '—',
+            stock: 0,
+            minimo: 0,
+            vence: ''
+          };
+          inventario.push(inv);
+        }
+        inv.stock = Math.max(0, parseInt(inv.stock || 0, 10) - it.qty);
+        movimientos.push({
+          fecha: ticket.ts,
+          sku: it.sku,
+          nombre: it.nombre,
+          cant: -it.qty,
+          motivo: 'Venta'
+        });
+      }
+      saveLS(LS_INV, inventario);
+      saveLS(LS_MOV, movimientos);
+
+      // 3) Ticket + reset
+      renderTicket(ticket);
+      const mp = document.getElementById('modalPago');
+      if (mp) {
+        const inst = bootstrap.Modal.getInstance(mp);
+        if (inst) inst.hide();
+      }
+      const mt = document.getElementById('modalTicket');
+      if (mt) new bootstrap.Modal(mt).show();
+
+      carrito = [];
+      renderCart();
+      ticketId = nextTicketId();
+      $('#lblTicket').textContent = ticketId;
+      renderTicketsRecientes();
+    }
+
+    /* ================================
+       Ticket
+    ==================================*/
+    function renderTicket(tk) {
+  const lines = [];
+  lines.push('          OXXO - Punto de Venta');
+  lines.push('----------------------------------------');
+  lines.push(`Ticket: ${tk.ticket}    Fecha: ${tk.ts}`);
+  lines.push(`Cajero: ${tk.cajero}`);
+  if (tk.clienteNombre || tk.clienteDoc) {
+    const nom = tk.clienteNombre || 'Mostrador';
+    const doc = tk.clienteDoc ? ` (${tk.clienteDoc})` : '';
+    lines.push(`Cliente: ${nom}${doc}`);
+  }
+  lines.push(`Pago:   ${tk.medio_pago}`);
+      lines.push('----------------------------------------');
+      tk.items.forEach(it => {
+        const sub = it.precio * it.cantidad;
+        const nom = (it.nombre || '').length > 24
+          ? (it.nombre || '').slice(0, 24) + '…'
+          : (it.nombre || '');
+        lines.push(`${it.cantidad} x ${nom}`);
+        lines.push(`    ${money(it.precio)}  Subtotal: ${money(sub)}`);
+      });
+      lines.push('----------------------------------------');
+      lines.push(`TOTAL: ${money(tk.total)}`);
+      lines.push('Gracias por su compra');
+      $('#ticketArea').textContent = lines.join('\n');
+    }
+
+    function imprimirTicket() {
+      const w = window.open('', 'PRINT', 'height=650,width=400');
+      w.document.write('<html><head><title>Ticket</title></head><body><pre>');
+      w.document.write(
+        document.getElementById('ticketArea').textContent.replace(/</g, '&lt;')
+      );
+      w.document.write('</pre></body></html>');
+      w.document.close();
+      w.focus();
+      w.print();
+      w.close();
+    }
+
+
+     
+
+    /* ================================
+       Tickets recientes (API -> LS)
+    ==================================*/
+    async function renderTicketsRecientes() {
+  const tb = $('#tbTickets tbody');
+  tb.innerHTML = '';
+  let ultimos = [];
+  try {
+    const arr = await getArray(Endpoints.ventas);
+    ultimos = arr.slice(-8);
+  } catch {
+    ultimos = (ventasHist || []).slice(-8);
+  }
+
+  ultimos.reverse().forEach(tk => {
+    const id    = tk.ticket || tk.id || '—';
+    const total = tk.total ?? tk.monto ?? 0;
+    const pago  = tk.medio_pago || tk.pago || '—';
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${id}</td>
+      <td>${tk.ts || tk.fecha || '—'}</td>
+      <td>${pago}</td>
+      <td class="text-end">${money(total)}</td>
+      <td class="text-end">
+        <button class="btn btn-sm btn-outline-secondary" onclick='verTicket("${id}")'>
+          Ticket
+        </button>
+      </td>
+    `;
+    tb.appendChild(tr);
+  });
+}
+
+    function verTicket(tid) {
+      const tk = (ventasHist || []).find(v => v.ticket === tid || v.id === tid);
+      if (!tk) return alert('Ticket no encontrado (usa LS).');
+      renderTicket(tk);
+      const mt = document.getElementById('modalTicket');
+      if (mt) new bootstrap.Modal(mt).show();
+    }
+
+    /* ================================
+       Eventos menores
+    ==================================*/
+    window.addEventListener('focus', async () => {
+      // re-sincroniza catálogo/inventario
+      try {
+        const apiCat = await getArray(Endpoints.productos);
+        if (apiCat?.length) catalogo = normalizeCatalog(apiCat);
+      } catch {
+        catalogo = loadCatalogLS();
+      }
+      try {
+        const apiInv = await getArray(Endpoints.inventario);
+        if (apiInv?.length) inventario = apiInv;
+      } catch {
+        inventario = JSON.parse(localStorage.getItem(LS_INV) || '[]');
+      }
+      syncInventoryToCatalog();
+    });
+
+    window.addEventListener('storage', e => {
+      if (KEYS_CATALOGO.includes(e.key)) {
+        catalogo = loadCatalogLS();
+        syncInventoryToCatalog();
+      }
+      if (e.key === LS_INV) {
+        inventario = JSON.parse(e.newValue || '[]');
+      }
+    });
+  </script>
+
+</body>
+</html>

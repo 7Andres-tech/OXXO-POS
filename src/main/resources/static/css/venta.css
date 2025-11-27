@@ -1,0 +1,20 @@
+/* Layout POS */
+.pos-box{ background:#fff; border-radius:.8rem; }
+.pos-summary .total{ font-size:1.8rem; font-weight:700; }
+.pos-summary .line{ display:flex; justify-content:space-between; margin:.25rem 0; }
+.pos-summary .line small{ color:#6c757d; }
+
+/* Tabla POS */
+.col-actions{ width:180px; }
+.nowrap{ white-space:nowrap; }
+
+/* Autocomplete */
+.autocomplete-wrap{ position:relative; }
+#autoList{
+  position:absolute; top:100%; left:0; right:0; z-index:1050;
+  max-height:280px; overflow:auto;
+  border:1px solid rgba(0,0,0,.125); border-top:0; background:#fff;
+  box-shadow:0 6px 18px rgba(0,0,0,.08);
+}
+#autoList .list-group-item{ cursor:pointer; }
+#autoList .active{ background:#f8d7da; } /* resaltado suave */

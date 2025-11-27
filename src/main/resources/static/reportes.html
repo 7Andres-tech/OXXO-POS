@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>OXXO | Reportes</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/base.css">
+  <style>
+    .table-fixed-head thead th{position:sticky;top:0;background:#212529;color:#fff;z-index:1}
+    .kpi .card-body{min-height:92px}
+    .chart-fixed{
+      position: relative;
+      height: 220px;
+    }
+    .chart-fixed canvas{
+      width: 100% !important;
+      height: 220px !important;
+      max-height: 220px !important;
+    }
+  </style>
+</head>
+<body>
+  <script> document.addEventListener('DOMContentLoaded', () => Auth.requireAuth(['ADMIN'])); </script>
+
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+  <div class="container-fluid">
+    <a class="navbar-brand d-flex align-items-center" href="inicio.html">
+      <img src="../img/OXXO-Logo.wine.png" class="brand-logo" alt="OXXO" width="76">
+    </a>
+    <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav"><span class="navbar-toggler-icon"></span></button>
+    <div id="nav" class="collapse navbar-collapse">
+      <ul class="navbar-nav me-auto">
+        <!-- visibles para ambos -->
+        <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="inicio.html">Inicio</a></li>
+        <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="venta.html">Ventas</a></li>
+        <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="clientes.html">Clientes frecuentes</a></li>
+      
+        <!-- solo ADMIN -->
+        <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="inventario.html">Inventario</a></li>
+        <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="productos.html">Productos</a></li>
+        <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="proveedores.html">Proveedores</a></li>
+        <li class="nav-item dropdown" data-roles="ADMIN">
+          <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#">Reportes</a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="reportes.html#ventas">R. Ventas</a></li>
+            <li><a class="dropdown-item" href="reportes.html#clientes">R. Clientes</a></li>
+            <li><a class="dropdown-item" href="reportes.html#productos">R. Productos</a></li>
+          </ul>
+        </li>
+        <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="cierre.html">Cierre de caja</a></li>
+      </ul>
+      
+      <div class="d-flex align-items-center gap-2">
+        <span class="navbar-text small">Hola, <strong id="navUserName">—</strong></span>
+        <a class="btn btn-outline-light btn-sm" href="cierre.html" data-roles="ADMIN,CAJERO">Cerrar turno</a>
+        <button class="btn btn-outline-light btn-sm" type="button" onclick="Auth.logout()">Salir</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<main class="container-fluid with-sidebar">
+  <div class="row">
+    <div class="col-12 px-3 px-md-4">
+
+      <!-- Filtro simple -->
+      <div class="pt-1 pb-2 border-bottom d-flex flex-wrap gap-2 align-items-center">
+        <h1 class="h4 fw-bold text-danger m-0">📊 Reportes</h1>
+        <div class="ms-auto d-flex gap-2 align-items-center">
+          <label class="form-label m-0 me-1">Rango:</label>
+          <input type="date" id="fDesde" class="form-control form-control-sm">
+          <span>—</span>
+          <input type="date" id="fHasta" class="form-control form-control-sm">
+          <button class="btn btn-sm btn-primary" id="btnAplicar">Aplicar</button>
+        </div>
+      </div>
+
+      <!-- VENTAS -->
+      <section class="mt-3" id="ventas">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h2 class="h5 m-0">Ventas</h2>
+          <button id="expVentas" class="btn btn-sm btn-outline-secondary">Exportar CSV</button>
+        </div>
+        <div class="row g-3 kpi">
+          <div class="col-6 col-md-3"><div class="card shadow-sm"><div class="card-body">
+            <h6 class="text-muted m-0">Ventas (S/)</h6><div class="fs-3 fw-semibold" id="k_ventas_total">—</div>
+            <small id="k_ventas_f"></small>
+          </div></div></div>
+          <div class="col-6 col-md-3"><div class="card shadow-sm"><div class="card-body">
+            <h6 class="text-muted m-0"># Comprobantes</h6><div class="fs-3 fw-semibold" id="k_ventas_cnt">—</div>
+          </div></div></div>
+          <div class="col-6 col-md-3"><div class="card shadow-sm"><div class="card-body">
+            <h6 class="text-muted m-0">Ticket promedio</h6><div class="fs-3 fw-semibold" id="k_ticket">—</div>
+          </div></div></div>
+          <div class="col-6 col-md-3"><div class="card shadow-sm"><div class="card-body">
+            <h6 class="text-muted m-0">Unidades vendidas</h6><div class="fs-3 fw-semibold" id="k_unidades">—</div>
+            <small class="text-muted">Usa detalle de ventas</small>
+          </div></div></div>
+        </div>
+        <div class="row g-3 mt-1">
+          <div class="col-lg-6"><div class="card shadow-sm"><div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+              <h6 class="m-0">Ventas por día</h6><small class="text-muted" id="vpd_sub"></small>
+            </div>
+            <div class="chart-fixed">
+              <canvas id="chVentasDia"></canvas>
+            </div>
+          </div></div></div>
+          <div class="col-lg-6"><div class="card shadow-sm"><div class="card-body">
+            <h6 class="m-0">Top productos (unidades)</h6>
+            <div class="chart-fixed">
+              <canvas id="chTopSkus"></canvas>
+            </div>
+          </div></div></div>
+        </div>
+        <div class="card shadow-sm mt-3"><div class="card-body">
+          <h6 class="mb-2">Detalle de ventas</h6>
+          <div class="table-responsive table-fixed-head" style="max-height:320px;">
+            <table class="table table-sm align-middle">
+              <thead class="table-dark">
+                <tr><th>ID</th><th>Fecha</th><th>Medio</th><th class="text-end">Total</th></tr>
+              </thead>
+              <tbody id="tbVentas"></tbody>
+            </table>
+          </div>
+        </div></div>
+      </section>
+
+      <!-- PRODUCTOS -->
+      <section class="mt-4" id="productos">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h2 class="h5 m-0">Productos</h2>
+          <button id="expProductos" class="btn btn-sm btn-outline-secondary">Exportar CSV</button>
+        </div>
+        <div class="row g-3 kpi">
+          <div class="col-6 col-md-3"><div class="card shadow-sm"><div class="card-body">
+            <h6 class="text-muted m-0">Activos</h6><div class="fs-3 fw-semibold" id="k_prod_activos">—</div>
+          </div></div></div>
+          <div class="col-6 col-md-3"><div class="card shadow-sm"><div class="card-body">
+            <h6 class="text-muted m-0">Categorías</h6><div class="fs-3 fw-semibold" id="k_prod_cats">—</div>
+          </div></div></div>
+          <div class="col-6 col-md-3"><div class="card shadow-sm"><div class="card-body">
+            <h6 class="text-muted m-0">Precio promedio</h6><div class="fs-3 fw-semibold" id="k_prod_pprom">—</div>
+          </div></div></div>
+          <div class="col-6 col-md-3"><div class="card shadow-sm"><div class="card-body">
+            <h6 class="text-muted m-0">Margen promedio</h6><div class="fs-3 fw-semibold" id="k_prod_margen">—</div>
+            <small class="text-muted">% sobre precio</small>
+          </div></div></div>
+        </div>
+        <div class="card shadow-sm mt-1"><div class="card-body">
+          <h6 class="mb-2">Top 20 por margen (estimado)</h6>
+          <div class="table-responsive table-fixed-head" style="max-height:300px;">
+            <table class="table table-sm align-middle">
+              <thead class="table-dark">
+                <tr>
+                  <th>SKU</th><th>Producto</th><th>Categoría</th>
+                  <th class="text-end">Precio</th><th class="text-end">Costo</th><th class="text-end">Margen %</th>
+                </tr>
+              </thead>
+              <tbody id="tbProdTop"></tbody>
+            </table>
+          </div>
+        </div></div>
+      </section>
+
+      <!-- INVENTARIO -->
+      <section class="mt-4 mb-5" id="inventario">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <h2 class="h5 m-0">Inventario</h2>
+          <button id="expInventario" class="btn btn-sm btn-outline-secondary">Exportar CSV</button>
+        </div>
+        <div class="row g-3 kpi">
+          <div class="col-6 col-md-3"><div class="card shadow-sm"><div class="card-body">
+            <h6 class="text-muted m-0">SKUs</h6><div class="fs-3 fw-semibold" id="k_inv_skus">—</div>
+          </div></div></div>
+          <div class="col-6 col-md-3"><div class="card shadow-sm"><div class="card-body">
+            <h6 class="text-muted m-0">Stock total</h6><div class="fs-3 fw-semibold" id="k_inv_total">—</div>
+          </div></div></div>
+          <div class="col-6 col-md-3"><div class="card shadow-sm"><div class="card-body">
+            <h6 class="text-muted m-0">Stock bajo</h6><div class="fs-3 fw-semibold text-danger" id="k_inv_bajo">—</div>
+          </div></div></div>
+          <div class="col-6 col-md-3"><div class="card shadow-sm"><div class="card-body">
+            <h6 class="text-muted m-0">Sin stock</h6><div class="fs-3 fw-semibold" id="k_inv_cero">—</div>
+          </div></div></div>
+        </div>
+        <div class="card shadow-sm mt-1"><div class="card-body">
+          <h6 class="mb-2">Items con stock bajo</h6>
+          <div class="table-responsive table-fixed-head" style="max-height:300px;">
+            <table class="table table-sm align-middle">
+              <thead class="table-dark">
+                <tr>
+                  <th>SKU</th><th>Producto</th><th>Categoría</th>
+                  <th class="text-end">Stock</th><th class="text-end">Mínimo</th><th>Proveedor</th><th>Vence</th>
+                </tr>
+              </thead>
+              <tbody id="tbInvBajo"></tbody>
+            </table>
+          </div>
+        </div></div>
+      </section>
+
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="/js/auth.js" defer></script>
+<script src="/js/api.js"  defer></script>
+
+<script>
+'use strict';
+
+/* ===================== Auth headers (igual que ventas) ===================== */
+function authHeadersJson(){
+  const h = (window.Auth && typeof Auth.authHeader === 'function')
+    ? Auth.authHeader()
+    : {};
+  return { 'Content-Type':'application/json', ...h };
+}
+
+/* =============================== Utils =============================== */
+const PEN = new Intl.NumberFormat('es-PE',{style:'currency',currency:'PEN'});
+const $   = (id)=>document.getElementById(id);
+const fmt = (n)=>PEN.format(Number(n||0));
+const df  = (d)=> d ? new Date(d) : null;
+const ymd = (d)=> d.toISOString().slice(0,10);
+const setText = (id,v)=>{ const el=$(id); if(el) el.textContent=(v??'—'); };
+
+function setQuickMonth(){
+  const hoy=new Date();
+  const d1 = new Date(hoy.getFullYear(),hoy.getMonth(),1);
+  const d2 = new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate());
+  $('fDesde').value = ymd(d1);
+  $('fHasta').value = ymd(d2);
+}
+const rango   = ()=>({ d: df($('fDesde').value), h: df(($('fHasta').value||'')+'T23:59:59') });
+const inRange = (dt,{d,h}) => !!dt && (!d||dt>=d) && (!h||dt<=h);
+
+/* ========================== Endpoints autodetect ========================== */
+const Endpoints = { ventas:null, ventasDetalle:null, productos:null, inventario:null, clientes:null };
+
+async function resolveFirst(paths){
+  for(const p of paths){
+    try{
+      const rH = await fetch(p, {method:'HEAD', headers:authHeadersJson()});
+      if(rH.ok) return p;
+    }catch{}
+    try{
+      const r = await fetch(p, {headers:authHeadersJson()});
+      if(r.ok) return p;
+    }catch{}
+  }
+  return null;
+}
+async function resolveAll(){
+  Endpoints.ventas        = await resolveFirst(['/api/ventas','/api/v1/ventas','/ventas']);
+  Endpoints.ventasDetalle = await resolveFirst(['/api/ventas/detalle','/api/v1/ventas/detalle','/ventas/detalle']);
+  Endpoints.productos     = await resolveFirst(['/api/productos','/api/v1/productos','/productos']);
+  Endpoints.inventario    = await resolveFirst(['/api/inventario','/api/v1/inventario','/inventario','/api/items']);
+  Endpoints.clientes      = await resolveFirst(['/api/clientes','/api/v1/clientes','/clientes']);
+}
+
+/* Normalizador de respuestas a array */
+async function getArray(url){
+  if(!url) return [];
+  const r = await fetch(url, {headers:authHeadersJson()});
+  if(!r.ok) return [];
+  const j = await r.json();
+  if (Array.isArray(j)) return j;
+  if (Array.isArray(j?.content)) return j.content;
+  if (Array.isArray(j?.items))   return j.items;
+  if (Array.isArray(j?.data))    return j.data;
+  return [];
+}
+
+/* ========================= LocalStorage fallbacks ========================= */
+const KEYS_CATALOGO = ['catalogo_productos','productos_data','productos','productosLS'];
+const LS_INV   = 'inventario_data';
+const LS_VHIST = 'ventasHist';
+const LS_CLIENTES = 'clientes_data';
+
+function normalizeProductos(arr){
+  return (arr||[]).map(o=>({
+    sku:       o.sku ?? o.SKU ?? o.codigo ?? o.code ?? '',
+    nombre:    o.nombre ?? o.name ?? o.producto ?? '',
+    categoria: o.categoria ?? o.category ?? 'General',
+    precio:    Number(o.precio ?? o.price ?? 0),
+    costo:     Number(o.costo  ?? o.cost  ?? 0),
+    proveedor: o.proveedor ?? o.vendor ?? '—',
+    activo:    ('activo' in (o||{})) ? !!o.activo : true
+  })).filter(p=>p.sku && p.nombre);
+}
+function loadProductosLS(){
+  for(const k of KEYS_CATALOGO){
+    try{
+      const v = JSON.parse(localStorage.getItem(k) || '');
+      if(Array.isArray(v) && v.length) return normalizeProductos(v);
+    }catch{}
+  }
+  return [];
+}
+function loadInventarioLS(){
+  try{ return JSON.parse(localStorage.getItem(LS_INV) || '[]'); }catch{ return []; }
+}
+function loadVentasLS(){   // tickets del POS
+  try{
+    const v = JSON.parse(localStorage.getItem(LS_VHIST) || '[]');
+    return Array.isArray(v) ? v.filter(t=>t.tipo==='venta') : [];
+  }catch{ return []; }
+}
+function loadClientesLS(){
+  try{
+    const v = JSON.parse(localStorage.getItem(LS_CLIENTES) || '[]');
+    return Array.isArray(v)?v:[];
+  }catch{ return []; }
+}
+// si no hay /api/ventas/detalle, armamos detalle desde tickets LS
+function buildDetalleFromTickets(tickets){
+  const det=[];
+  (tickets||[]).forEach(t=>{
+    if(t.tipo!=='venta') return;
+    (t.items||[]).forEach(it=>{
+      det.push({
+        ventaId: t.id || t.ticket,
+        sku: it.sku,
+        cantidad: it.cantidad ?? it.qty ?? 0
+      });
+    });
+  });
+  return det;
+}
+
+/* =============================== Estado =============================== */
+const state = { ventas:[], detalle:[], productos:[], inventario:[], clientes:[] };
+
+/* =============================== Inicio =============================== */
+document.addEventListener('DOMContentLoaded', async () => {
+  setQuickMonth();
+
+  $('btnAplicar').addEventListener('click', renderVentas);
+  $('expVentas').addEventListener('click', exportVentas);
+  $('expProductos').addEventListener('click', exportProductos);
+  $('expInventario').addEventListener('click', exportInventario);
+
+  await loadAll();
+});
+
+/* ==================== Carga de datos con backend + LS ==================== */
+async function loadAll(){
+  await resolveAll();
+
+  // Ventas
+  try{
+    state.ventas = await getArray(Endpoints.ventas);
+  }catch{ state.ventas = []; }
+  if(!state.ventas.length){
+    state.ventas = loadVentasLS();
+  }
+
+  // Detalle
+  try{
+    state.detalle = await getArray(Endpoints.ventasDetalle);
+  }catch{ state.detalle = []; }
+  if(!state.detalle.length){
+    const ticketsLS = loadVentasLS();
+    state.detalle = buildDetalleFromTickets(ticketsLS);
+  }
+
+  // Productos
+  try{
+    state.productos = normalizeProductos(await getArray(Endpoints.productos));
+  }catch{ state.productos = []; }
+  if(!state.productos.length){
+    state.productos = loadProductosLS();
+  }
+
+  // Inventario
+  try{
+    state.inventario = await getArray(Endpoints.inventario);
+  }catch{ state.inventario = []; }
+  if(!state.inventario.length){
+    state.inventario = loadInventarioLS();
+  }
+
+  // Clientes (por ahora solo guardamos, no los mostramos aquí)
+  try{
+    state.clientes = await getArray(Endpoints.clientes);
+  }catch{ state.clientes = []; }
+  if(!state.clientes.length){
+    state.clientes = loadClientesLS();
+  }
+
+  renderVentas(); 
+  renderProductos(); 
+  renderInventario();
+}
+
+/* ============================ Render: Ventas ============================ */
+let chVentasDia, chTopSkus;
+
+function renderVentas(){
+  const R=rango();
+  const vts = (state.ventas||[])
+    .map(v=>({
+      ...v,
+      _f: df(v.fecha || v.fechaEmision || v.fecha_venta || v.ts)
+    }))
+    .filter(v=>inRange(v._f,R))
+    .sort((a,b)=>a._f-b._f);
+
+  const total = vts.reduce((s,v)=>s+Number(v.total||v.importe||v.monto||0),0);
+  const cnt   = vts.length;
+  const ticket= cnt? total/cnt : 0;
+
+  // unidades vendidas
+  let unidades = null;
+  if(state.detalle && state.detalle.length){
+    const ids = new Set(vts.map(v=>String(v.id||v.ventaId||v.codigo||v.ticket)));
+    unidades  = state.detalle
+      .filter(d=>ids.has(String(d.ventaId||d.venta_id||d.venta||d.idVenta)))
+      .reduce((s,d)=>s+Number(d.cantidad||0),0);
+  }
+
+  setText('k_ventas_total', fmt(total));
+  setText('k_ventas_cnt', cnt);
+  setText('k_ticket', fmt(ticket));
+  setText('k_unidades', unidades==null?'—':unidades);
+  setText('k_ventas_f', (R.d&&R.h)?(R.d.toLocaleDateString('es-PE')+' a '+R.h.toLocaleDateString('es-PE')):'');
+
+  // Tabla
+  const tb=$('tbVentas'); tb.innerHTML='';
+  for(const v of vts.slice().reverse()){
+    tb.insertAdjacentHTML('beforeend',
+      `<tr>
+        <td>${v.id ?? v.ticket ?? '-'}</td>
+        <td>${v._f? v._f.toLocaleString('es-PE'):'-'}</td>
+        <td>${v.medio_pago ?? v.medio ?? v.metodo ?? v.pago ?? '-'}</td>
+        <td class="text-end">${fmt(v.total??v.importe??v.monto)}</td>
+      </tr>`);
+  }
+
+  // Serie por día
+  const byDay=new Map();
+  for(const v of vts){
+    if(!v._f) continue;
+    const k=ymd(v._f);
+    byDay.set(k,(byDay.get(k)||0)+Number(v.total||v.importe||v.monto||0));
+  }
+  const labels=[...byDay.keys()].sort();
+  const vals  =labels.map(k=>byDay.get(k));
+  drawLine('chVentasDia', labels, vals);
+  setText('vpd_sub', `${labels.length} días`);
+
+  // Top SKUs
+  if(state.detalle && state.detalle.length){
+    const fechaById=new Map(vts.map(v=>[String(v.id||v.ventaId||v.codigo||v.ticket),v._f]));
+    const top=new Map();
+    for(const it of state.detalle){
+      const vid = String(it.ventaId||it.venta_id||it.venta||it.idVenta);
+      if(!fechaById.has(vid)) continue;
+      const sku = it.sku || it.SKU || it.productoSku || it.producto_id || '—';
+      top.set(sku,(top.get(sku)||0)+Number(it.cantidad||0));
+    }
+    const arr=[...top.entries()].sort((a,b)=>b[1]-a[1]).slice(0,10);
+    drawBar('chTopSkus', arr.map(a=>a[0]), arr.map(a=>a[1]));
+  }else{
+    drawBar('chTopSkus', [], []);
+  }
+}
+
+/* =========================== Render: Productos =========================== */
+function renderProductos(){
+  const P=state.productos||[];
+  const activos = P.filter(p=>p.activo===true||p.activo==='true').length;
+  const cats    = new Set(P.map(p=>p.categoria).filter(Boolean)).size;
+  const precios = P.map(p=>Number(p.precio||0)).filter(v=>v>0);
+  const pprom   = precios.length? precios.reduce((a,b)=>a+b,0)/precios.length : 0;
+  const marg    = P.map(p=>{
+                    const pr=Number(p.precio||0), co=Number(p.costo||0);
+                    return pr>0? (1-(co/pr))*100 : null;
+                  }).filter(v=>v!=null);
+  const mProm   = marg.length? marg.reduce((a,b)=>a+b,0)/marg.length : 0;
+
+  setText('k_prod_activos', activos);
+  setText('k_prod_cats', cats);
+  setText('k_prod_pprom', fmt(pprom));
+  setText('k_prod_margen', (Math.round(mProm*10)/10).toFixed(1)+'%');
+
+  const tb=$('tbProdTop'); tb.innerHTML='';
+  P.map(p=>{
+      const pr=Number(p.precio||0), co=Number(p.costo||0);
+      return {...p,_m: pr>0? (1-(co/pr))*100 : null};
+    })
+   .filter(p=>p._m!=null)
+   .sort((a,b)=>b._m-a._m)
+   .slice(0,20)
+   .forEach(p=>{
+     tb.insertAdjacentHTML('beforeend',
+      `<tr>
+         <td>${p.sku}</td>
+         <td>${p.nombre??'-'}</td>
+         <td>${p.categoria??'-'}</td>
+         <td class="text-end">${p.precio!=null?fmt(p.precio):'-'}</td>
+         <td class="text-end">${p.costo!=null?fmt(p.costo):'-'}</td>
+         <td class="text-end">${(Math.round(p._m*10)/10).toFixed(1)}%</td>
+       </tr>`);
+   });
+}
+
+/* ========================== Render: Inventario ========================== */
+function renderInventario(){
+  const I=state.inventario||[];
+  setText('k_inv_skus', I.length);
+  setText('k_inv_total', I.reduce((s,i)=>s+Number(i.stock||0),0));
+  setText('k_inv_bajo',  I.filter(i=>Number(i.stock||0)>0 && Number(i.minimo||0)>0 && Number(i.stock)<Number(i.minimo)).length);
+  setText('k_inv_cero',  I.filter(i=>Number(i.stock||0)===0).length);
+
+  const tb=$('tbInvBajo'); tb.innerHTML='';
+  I.filter(i=>Number(i.minimo||0)>0 && Number(i.stock||0)<Number(i.minimo))
+   .sort((a,b)=>(a.stock/a.minimo)-(b.stock/b.minimo))
+   .forEach(i=>{
+     tb.insertAdjacentHTML('beforeend',
+      `<tr>
+        <td>${i.sku}</td>
+        <td>${i.nombre??'-'}</td>
+        <td>${i.categoria??'-'}</td>
+        <td class="text-end">${i.stock??0}</td>
+        <td class="text-end">${i.minimo??0}</td>
+        <td>${i.proveedor??i.proveedorId??'-'}</td>
+        <td>${i.vence??'-'}</td>
+      </tr>`);
+   });
+}
+
+/* ============================ Charts helpers ============================ */
+function niceMax(m){
+  if(m<=0) return 1;
+  const order = Math.pow(10, Math.floor(Math.log10(m)));
+  return Math.ceil((m*1.1)/order)*order;
+}
+function drawLine(id, labels, data){
+  const el=$(id); if(!el) return;
+  if(el._chart) el._chart.destroy();
+
+  const vals = data.map(v=>Math.max(0, Number(v)||0));
+  const rawMax = Math.max(0, ...vals);
+  const max = rawMax===0 ? 1 : niceMax(rawMax);
+
+  el._chart = new Chart(el,{
+    type:'line',
+    data:{ labels, datasets:[{ label:'Ventas (S/)', data:vals, tension:.3 }]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{ callbacks:{ label:(ctx)=>PEN.format(ctx.parsed.y) } }
+      },
+      scales:{
+        y:{
+          beginAtZero:true, min:0, max,
+          ticks:{ callback:(v)=>PEN.format(v) }
+        }
+      }
+    }
+  });
+}
+function drawBar(id, labels, data){
+  const el=$(id); if(!el) return;
+  if(el._chart) el._chart.destroy();
+  el._chart=new Chart(el,{
+    type:'bar',
+    data:{labels,datasets:[{label:'Unidades',data}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}
+  });
+}
+
+/* ============================== Export CSV ============================== */
+function toCSV(rows){return rows.map(r=>r.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');}
+function dlCSV(rows,name){
+  const blob=new Blob([toCSV(rows)],{type:'text/csv;charset=utf-8;'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download=name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),500);
+}
+
+function exportVentas(){
+  const rows=[['ID','Fecha','Medio','Total']];
+  document.querySelectorAll('#tbVentas tr').forEach(tr=>{
+    const t=tr.querySelectorAll('td');
+    rows.push([t[0].textContent,t[1].textContent,t[2].textContent,t[3].textContent]);
+  });
+  dlCSV(rows,'ventas.csv');
+}
+function exportProductos(){
+  const rows=[['SKU','Nombre','Categoria','Precio','Costo','Margen%']];
+  document.querySelectorAll('#tbProdTop tr').forEach(tr=>{
+    const t=tr.querySelectorAll('td');
+    rows.push([t[0].textContent,t[1].textContent,t[2].textContent,t[3].textContent,t[4].textContent,t[5].textContent]);
+  });
+  dlCSV(rows,'productos_margen.csv');
+}
+function exportInventario(){
+  const rows=[['SKU','Producto','Categoria','Stock','Minimo','Proveedor','Vence']];
+  document.querySelectorAll('#tbInvBajo tr').forEach(tr=>{
+    const t=tr.querySelectorAll('td');
+    rows.push([t[0].textContent,t[1].textContent,t[2].textContent,t[3].textContent,t[4].textContent,t[5].textContent,t[6].textContent]);
+  });
+  dlCSV(rows,'inventario_stock_bajo.csv');
+}
+</script>
+</body>
+</html>

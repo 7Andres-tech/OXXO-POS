@@ -1,0 +1,580 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OXXO | Cierre de caja</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/cierre.css">
+</head>
+<body>
+  <script> document.addEventListener('DOMContentLoaded', () => Auth.requireAuth(['CAJERO','ADMIN'])); </script>
+
+<!-- NAV -->
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+  <div class="container-fluid">
+    <a class="navbar-brand d-flex align-items-center" href="inicio.html" aria-label="Ir al inicio">
+      <img src="../img/OXXO-Logo.wine.png" class="brand-logo" alt="OXXO" width="76">
+    </a>
+    <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav"><span class="navbar-toggler-icon"></span></button>
+    <div id="nav" class="collapse navbar-collapse">
+      <ul class="navbar-nav me-auto">
+        <!-- visibles para ambos -->
+        <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="inicio.html">Inicio</a></li>
+        <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="venta.html">Ventas</a></li>
+        <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="clientes.html">Clientes frecuentes</a></li>
+
+        <!-- solo ADMIN -->
+        <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="inventario.html">Inventario</a></li>
+        <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="productos.html">Productos</a></li>
+        <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="proveedores.html">Proveedores</a></li>
+        <li class="nav-item dropdown" data-roles="ADMIN">
+          <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#">Reportes</a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="reportes.html#ventas">R. Ventas</a></li>
+            <li><a class="dropdown-item" href="reportes.html#clientes">R. Clientes</a></li>
+            <li><a class="dropdown-item" href="reportes.html#productos">R. Productos</a></li>
+          </ul>
+        </li>
+        <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="cierre.html">Cierre de caja</a></li>
+      </ul>
+
+      <div class="d-flex align-items-center gap-2">
+        <span class="navbar-text small">Hola, <strong id="navUserName">—</strong></span>
+        <a class="btn btn-outline-light btn-sm" href="cierre.html" data-roles="ADMIN,CAJERO">Cerrar turno</a>
+        <button class="btn btn-outline-light btn-sm" type="button" onclick="Auth.logout()">Salir</button>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- CONTENT -->
+<main class="container-fluid with-sidebar">
+  <div class="row">
+    <div class="col-12 px-3 px-md-4">
+
+      <!-- Header -->
+      <div class="pt-3 pb-2 border-bottom d-flex flex-wrap justify-content-between align-items-center">
+        <div>
+          <h1 class="h4 fw-bold text-danger m-0">🧾 Cierre de caja</h1>
+          <div class="small text-muted">
+            Turno: <span id="lblTurno">T-001</span> • Cajero: <strong id="lblCajero">Cajero 01</strong> •
+            Inicio: <span id="lblInicio">—</span> • Ahora: <span id="lblAhora">—</span>
+          </div>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn btn-outline-secondary" id="btnExport">Exportar CSV</button>
+          <button class="btn btn-outline-secondary" onclick="window.print()">Imprimir</button>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="row g-3 mt-2">
+        <div class="col-6 col-md-3"><div class="card shadow-sm"><div class="card-body">
+          <h6 class="text-muted m-0">Ventas brutas</h6><div class="fs-3 fw-semibold" id="kpiBrutas">—</div>
+        </div></div></div>
+        <div class="col-6 col-md-3"><div class="card shadow-sm"><div class="card-body">
+          <h6 class="text-muted m-0">Devoluciones</h6><div class="fs-3 fw-semibold" id="kpiDevol">—</div>
+        </div></div></div>
+        <div class="col-6 col-md-3"><div class="card shadow-sm"><div class="card-body">
+          <h6 class="text-muted m-0">Ventas netas</h6><div class="fs-3 fw-semibold" id="kpiNetas">—</div>
+        </div></div></div>
+        <div class="col-6 col-md-3"><div class="card shadow-sm"><div class="card-body">
+          <h6 class="text-muted m-0"># Tickets</h6><div class="fs-3 fw-semibold" id="kpiTickets">—</div>
+        </div></div></div>
+      </div>
+
+      <!-- Medios de pago -->
+      <div class="row g-3 mt-1">
+        <div class="col-lg-6">
+          <div class="card shadow-sm">
+            <div class="card-header bg-light fw-semibold">💳 Medios de pago del turno</div>
+            <div class="card-body">
+              <div class="table-responsive">
+                <table class="table table-hover align-middle" id="tbPagos">
+                  <thead class="table-dark"><tr><th>Medio</th><th class="text-end">Monto</th><th class="text-end">Tickets</th></tr></thead>
+                  <tbody>
+                    <tr><td>Efectivo</td><td class="text-end" id="pagoEfe">—</td><td class="text-end" id="tckEfe">—</td></tr>
+                    <tr><td>Tarjeta</td><td class="text-end" id="pagoTar">—</td><td class="text-end" id="tckTar">—</td></tr>
+                    <tr><td>Yape/Plin</td><td class="text-end" id="pagoYap">—</td><td class="text-end" id="tckYap">—</td></tr>
+                    <tr class="table-light fw-semibold"><td>Total</td><td class="text-end" id="pagoTot">—</td><td class="text-end" id="tckTot">—</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <small class="text-muted">* Devoluciones restan del medio correspondiente.</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Teórico vs Conteo -->
+        <div class="col-lg-6">
+          <div class="card shadow-sm">
+            <div class="card-header bg-light fw-semibold">🧮 Teórico vs. conteo</div>
+            <div class="card-body">
+              <div class="row g-2">
+                <div class="col-6">
+                  <label class="form-label">Fondo inicial</label>
+                  <input id="fondoInicial" type="number" class="form-control" value="100.00" step="0.01">
+                </div>
+                <div class="col-6">
+                  <label class="form-label">Gastos en efectivo</label>
+                  <input id="gastosEfe" type="number" class="form-control" value="0.00" step="0.01">
+                </div>
+                <div class="col-6">
+                  <label class="form-label">Retiros a bóveda</label>
+                  <input id="retirosEfe" type="number" class="form-control" value="0.00" step="0.01">
+                </div>
+                <div class="col-6">
+                  <label class="form-label">Efectivo teórico</label>
+                  <input id="efectivoTeorico" class="form-control" disabled>
+                </div>
+              </div>
+              <hr>
+              <div class="row g-2">
+                <div class="col-6">
+                  <label class="form-label">Efectivo contado</label>
+                  <input id="efectivoContado" class="form-control" disabled>
+                </div>
+                <div class="col-6">
+                  <label class="form-label">Discrepancia</label>
+                  <input id="discrepancia" class="form-control" disabled>
+                </div>
+              </div>
+              <div class="mt-2">
+                <label class="form-label">Observaciones</label>
+                <textarea id="obs" class="form-control" rows="2" placeholder="Notas del cierre..."></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Conteo de efectivo -->
+      <div class="card shadow-sm mt-3">
+        <div class="card-header bg-light fw-semibold">💵 Conteo de efectivo</div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-sm align-middle" id="tbConteo">
+              <thead class="table-dark">
+                <tr><th>Denominación</th><th class="text-end">Cantidad</th><th class="text-end">Subtotal</th></tr>
+              </thead>
+              <tbody><!-- JS rellena --></tbody>
+              <tfoot>
+                <tr class="table-light fw-semibold">
+                  <td>Total contado</td><td></td><td class="text-end" id="totalContado">S/ 0.00</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+          <small class="text-muted">Denominaciones sugeridas (puedes dejar en blanco las que no uses).</small>
+        </div>
+      </div>
+
+      <!-- Acciones -->
+      <div class="d-flex flex-wrap gap-2 justify-content-end my-3">
+        <button class="btn btn-outline-secondary" id="btnBorrador">Guardar borrador</button>
+        <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalCerrar">Cerrar turno</button>
+      </div>
+
+      <!-- Historial de cierres -->
+      <div class="card shadow-sm mb-5">
+        <div class="card-header bg-light fw-semibold">📚 Historial de cierres</div>
+        <div class="card-body">
+          <div class="table-responsive" style="max-height:340px;">
+            <table class="table table-hover align-middle" id="tbHist">
+              <thead class="table-dark">
+                <tr>
+                  <th>Fecha</th><th>Turno</th><th>Cajero</th>
+                  <th class="text-end">Ventas netas</th>
+                  <th class="text-end">Efectivo teórico</th>
+                  <th class="text-end">Contado</th>
+                  <th class="text-end">Dif.</th>
+                </tr>
+              </thead>
+              <tbody><!-- JS --></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<!-- MODAL CONFIRMAR CIERRE -->
+<div class="modal fade" id="modalCerrar" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog"><div class="modal-content">
+    <div class="modal-header bg-danger text-white">
+      <h5 class="modal-title">Confirmar cierre de turno</h5>
+      <button class="btn-close" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body">
+      <p class="mb-1">¿Seguro que deseas cerrar el turno <strong id="modTurno">T-001</strong>?</p>
+      <ul class="small text-muted mb-0">
+        <li>Se guardará el cierre en el historial.</li>
+        <li>Serás redirigido a <code>index.html</code> para iniciar sesión de nuevo.</li>
+      </ul>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+      <button class="btn btn-danger" id="btnConfirmarCierre">Cerrar turno</button>
+    </div>
+  </div></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/auth.js" defer></script>
+<script src="/js/api.js"  defer></script>
+
+<script>
+  'use strict';
+  
+  /* ========= Utilidades ========= */
+  const $   = s => document.querySelector(s);
+  const PEN = new Intl.NumberFormat('es-PE',{style:'currency',currency:'PEN'});
+  const money    = v => PEN.format(Number(v)||0);
+  const parseNum = v => isNaN(parseFloat(v)) ? 0 : parseFloat(v);
+  
+  /* ========= Info de usuario (para filtrar por cajero / admin) ========= */
+  const currentUser = (window.Auth && typeof Auth.getUser === 'function')
+    ? Auth.getUser()
+    : null;
+  
+  const roles    = currentUser?.roles || [];
+  const isAdmin  = roles.includes('ADMIN');
+  const isCajero = roles.includes('CAJERO');
+  
+  const nombreCajero =
+    localStorage.getItem('cajeroNombre') ||
+    currentUser?.fullName ||
+    currentUser?.nombre ||
+    currentUser?.username ||
+    currentUser?.userName ||
+    'Cajero 01';
+  
+  /* ========= Endpoints (solo BD, nada de localStorage) ========= */
+  const Endpoints = { ventas:null, cierres:null };
+  
+  async function resolveFirst(paths){
+    for(const url of paths){
+      try{
+        const r = await fetch(url, {method:'HEAD', headers: Auth.authHeader()});
+        if(r.ok) return url;
+      }catch{}
+      try{
+        const r = await fetch(url, {headers: Auth.authHeader()});
+        if(r.ok) return url;
+      }catch{}
+    }
+    return null;
+  }
+  
+  async function resolveEndpoints(){
+    Endpoints.ventas  = await resolveFirst(['/api/ventas','/api/v1/ventas','/ventas']);
+    Endpoints.cierres = await resolveFirst(['/api/cierres','/api/caja/cierres','/cierre']);
+  }
+  
+  /* devuelve siempre array, aunque el backend devuelva {content:[]} o {items:[]} */
+  async function getArray(url){
+    if(!url) return [];
+    const r = await fetch(url,{headers:{Accept:'application/json',...Auth.authHeader()}});
+    if(!r.ok) return [];
+    const j = await r.json();
+    if(Array.isArray(j))            return j;
+    if(Array.isArray(j?.content))   return j.content;
+    if(Array.isArray(j?.items))     return j.items;
+    if(Array.isArray(j?.data))      return j.data;
+    return [];
+  }
+  
+  /* ========= Normalización de ventas que vienen de la BD ========= */
+  function mapVentaBD(v){
+    const fechaRaw = v.fecha || v.fechaEmision || v.fecha_venta || v.ts || v.createdAt;
+    const fecha    = fechaRaw ? new Date(fechaRaw) : null;
+  
+    const tipoRaw  = (v.tipo || v.movimiento || '').toString().toUpperCase();
+    const isDevol  = tipoRaw.includes('DEV') || tipoRaw.includes('ANUL');
+    const tipo     = isDevol ? 'DEV' : 'VENTA';
+  
+    const medio = v.medioPago || v.medio_pago || v.pago || v.metodo || 'Efectivo';
+  
+    const total = Number(
+      v.total ?? v.monto ?? v.importe ?? v.totalNeto ?? v.neto ?? 0
+    );
+  
+    const cajero = v.cajeroNombre || v.cajero || v.usuario || v.userName || null;
+  
+    return {fecha, tipo, medio, total, cajero};
+  }
+  
+  /* ========= Resumen por medios de pago ========= */
+  function resumenPagos(ventas){
+    const base = {monto:0, tickets:0};
+    const medios = {
+      'Efectivo': {...base},
+      'Tarjeta':  {...base},
+      'Yape/Plin':{...base}
+    };
+  
+    let brutas = 0;
+    let devol  = 0;
+    let tickets= 0;
+  
+    for(const v of ventas){
+      const medio = medios[v.medio] ? v.medio : 'Efectivo';
+      if(!medios[medio]) medios[medio] = {...base};
+  
+      if(v.tipo === 'DEV'){
+        medios[medio].monto -= v.total;
+        devol += v.total;
+      }else{
+        medios[medio].monto += v.total;
+        medios[medio].tickets++;
+        brutas += v.total;
+        tickets++;
+      }
+    }
+  
+    return {
+      medios,
+      brutas,
+      devol,
+      netas: brutas - devol,
+      tickets
+    };
+  }
+  
+  /* ========= Conteo de efectivo ========= */
+  const DENOMS = [200,100,50,20,10,5,2,1,0.5,0.2,0.1];
+  let conteo = {};
+  DENOMS.forEach(d => conteo[d]=0);
+  
+  function renderConteo(){
+    const tb = $('#tbConteo tbody');
+    tb.innerHTML = '';
+    DENOMS.forEach(d=>{
+      const id = 'den_'+String(d).replace('.','_');
+      tb.insertAdjacentHTML('beforeend',`
+        <tr>
+          <td>${money(d)}</td>
+          <td class="text-end">
+            <input id="${id}" type="number" min="0"
+                   class="form-control form-control-sm text-end" placeholder="0">
+          </td>
+          <td class="text-end" id="${id}_sum">${money(0)}</td>
+        </tr>
+      `);
+      $('#'+id).addEventListener('input',()=>{
+        conteo[d] = parseNum($('#'+id).value);
+        const sub = d * conteo[d];
+        $('#'+id+'_sum').textContent = money(sub);
+        actualizarConteo();
+      });
+    });
+  }
+  
+  function actualizarConteo(){
+    const total = DENOMS.reduce((a,d)=>a + d*conteo[d], 0);
+    $('#totalContado').textContent = money(total);
+    $('#efectivoContado').value   = money(total);
+    actualizarDiscrepancia();
+  }
+  
+  /* ========= Cálculo efectivo teórico ========= */
+  let _ventas = [];   // ventas normalizadas del turno
+  
+  function calcularTeorico(){
+    const res = resumenPagos(_ventas);
+    const fondo  = parseNum($('#fondoInicial').value);
+    const gastos = parseNum($('#gastosEfe').value);
+    const retiros= parseNum($('#retirosEfe').value);
+    const teorico = fondo + (res.medios['Efectivo']?.monto||0) - gastos - retiros;
+    $('#efectivoTeorico').value = money(teorico);
+    actualizarDiscrepancia();
+  }
+  
+  function actualizarDiscrepancia(){
+    const cont = parseNum($('#totalContado').textContent.replace(/[^\d.]/g,''));
+    const teo  = parseNum($('#efectivoTeorico').value.replace(/[^\d.]/g,''));
+    const dif  = cont - teo;
+    const el   = $('#discrepancia');
+    el.value = (dif>=0?'+':'') + money(dif);
+    el.classList.toggle('is-invalid', Math.abs(dif) > 0.009);
+  }
+  
+  /* ========= Header & KPIs ========= */
+  function renderHeader(){
+    const turnoId     = localStorage.getItem('turnoId') || 'T-Actual';
+    const turnoInicio = localStorage.getItem('turnoInicio') || '—';
+  
+    $('#lblTurno').textContent  = turnoId;
+    $('#lblCajero').textContent = nombreCajero;
+    $('#lblInicio').textContent = turnoInicio;
+    $('#lblAhora').textContent  = new Date().toLocaleString();
+    $('#modTurno').textContent  = turnoId;
+  }
+  
+  function renderKPIs(){
+    const res = resumenPagos(_ventas);
+  
+    $('#kpiBrutas').textContent  = money(res.brutas);
+    $('#kpiDevol').textContent   = money(res.devol);
+    $('#kpiNetas').textContent   = money(res.netas);
+    $('#kpiTickets').textContent = res.tickets;
+  
+    $('#pagoEfe').textContent = money(res.medios['Efectivo']?.monto || 0);
+    $('#tckEfe').textContent  = res.medios['Efectivo']?.tickets || 0;
+    $('#pagoTar').textContent = money(res.medios['Tarjeta']?.monto || 0);
+    $('#tckTar').textContent  = res.medios['Tarjeta']?.tickets || 0;
+    $('#pagoYap').textContent = money(res.medios['Yape/Plin']?.monto || 0);
+    $('#tckYap').textContent  = res.medios['Yape/Plin']?.tickets || 0;
+  
+    const totMonto =
+      (res.medios['Efectivo']?.monto||0) +
+      (res.medios['Tarjeta']?.monto||0)  +
+      (res.medios['Yape/Plin']?.monto||0);
+  
+    $('#pagoTot').textContent = money(totMonto);
+    $('#tckTot').textContent  = res.tickets;
+  
+    calcularTeorico();
+  }
+  
+  /* ========= Historial de cierres desde BD (si existe) ========= */
+  async function renderHistorial(){
+    if(!Endpoints.cierres) return;
+    const arr = await getArray(Endpoints.cierres);
+    const tb  = $('#tbHist tbody');
+    tb.innerHTML = '';
+  
+    arr.map(c => ({
+        fecha:       c.fecha || c.createdAt || c.ts || '',
+        turno:       c.turno || c.turnoId || c.codigoTurno || '—',
+        cajero:      c.cajero || c.cajeroNombre || '—',
+        netas:       Number(c.netas || c.totalNeto || c.ventasNetas || 0),
+        efTeorico:   Number(c.efectivoTeorico || c.efecTeorico || 0),
+        efContado:   Number(c.efectivoContado || c.efecContado || 0)
+      }))
+      .sort((a,b)=> (new Date(b.fecha)) - (new Date(a.fecha)))
+      .forEach(c=>{
+        tb.insertAdjacentHTML('beforeend',`
+          <tr>
+            <td>${c.fecha}</td>
+            <td>${c.turno}</td>
+            <td>${c.cajero}</td>
+            <td class="text-end">${money(c.netas)}</td>
+            <td class="text-end">${money(c.efTeorico)}</td>
+            <td class="text-end">${money(c.efContado)}</td>
+            <td class="text-end">${money(c.efContado - c.efTeorico)}</td>
+          </tr>
+        `);
+      });
+  }
+  
+  /* ========= Exportar CSV (solo con datos de este turno desde BD) ========= */
+  function exportCSV(){
+    const res = resumenPagos(_ventas);
+    const rows = [];
+  
+    const turnoId     = localStorage.getItem('turnoId') || 'T-Actual';
+    const turnoInicio = localStorage.getItem('turnoInicio') || '—';
+  
+    rows.push(['Turno', turnoId]);
+    rows.push(['Cajero', nombreCajero]);
+    rows.push(['Inicio', turnoInicio]);
+    rows.push(['Ahora', new Date().toLocaleString()]);
+    rows.push([]);
+    rows.push(['Ventas brutas', res.brutas]);
+    rows.push(['Devoluciones', res.devol]);
+    rows.push(['Ventas netas', res.netas]);
+    rows.push(['Tickets', res.tickets]);
+    rows.push([]);
+    rows.push(['Medio','Monto','Tickets']);
+    rows.push(['Efectivo',(res.medios['Efectivo']?.monto||0),(res.medios['Efectivo']?.tickets||0)]);
+    rows.push(['Tarjeta', (res.medios['Tarjeta']?.monto||0), (res.medios['Tarjeta']?.tickets||0)]);
+    rows.push(['Yape/Plin',(res.medios['Yape/Plin']?.monto||0),(res.medios['Yape/Plin']?.tickets||0)]);
+    rows.push([]);
+    rows.push(['Fondo inicial',  parseNum($('#fondoInicial').value)]);
+    rows.push(['Gastos efectivo',parseNum($('#gastosEfe').value)]);
+    rows.push(['Retiros bóveda', parseNum($('#retirosEfe').value)]);
+    rows.push(['Efectivo teórico', $('#efectivoTeorico').value]);
+    rows.push(['Efectivo contado', $('#efectivoContado').value]);
+    rows.push(['Discrepancia',     $('#discrepancia').value]);
+  
+    const csv  = rows.map(r=>r.join(',')).join('\n');
+    const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
+    const a    = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'cierre_caja.csv';
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),500);
+  }
+  
+  /* ========= Guardar borrador SOLO en LS (no toca BD) ========= */
+  function guardarBorrador(){
+    const res = resumenPagos(_ventas);
+    const borr = {
+      ts: Date.now(),
+      turno: localStorage.getItem('turnoId') || 'T-Actual',
+      cajero: nombreCajero,
+      fondo:  parseNum($('#fondoInicial').value),
+      gastos: parseNum($('#gastosEfe').value),
+      retiros:parseNum($('#retirosEfe').value),
+      efecTeorico: parseNum($('#efectivoTeorico').value.replace(/[^\d.]/g,'')),
+      efecContado: parseNum($('#totalContado').textContent.replace(/[^\d.]/g,'')),
+      netas: res.netas,
+      obs: $('#obs').value
+    };
+    localStorage.setItem('cierre_borrador', JSON.stringify(borr));
+    alert('Borrador guardado.');
+  }
+  
+  /* ========= Cerrar turno: solo redirige (el cierre “formal” está en la BD) ========= */
+  async function cerrarTurno(){
+    // Aquí podrías hacer POST a /api/cierres si lo tienes.
+    // Por ahora solo limpiamos algunos datos locales y volvemos al login.
+    localStorage.removeItem('ventasTurno');
+    window.location.href = 'index.html';
+  }
+  
+  /* ========= INIT ========= */
+  document.addEventListener('DOMContentLoaded', async () => {
+    if(!Auth.requireAuth(['CAJERO','ADMIN'])) return;
+  
+    renderHeader();
+    renderConteo();
+  
+    await resolveEndpoints();
+  
+    // 1) Traer TODAS las ventas de la BD
+    const ventasRaw = await getArray(Endpoints.ventas);
+  
+    // 2) Normalizar
+    let ventas = ventasRaw.map(mapVentaBD).filter(v => v.fecha);
+  
+    // 3) Filtrar por día actual (puedes ajustar si tu backend maneja turnos)
+    const hoyYmd = new Date().toISOString().slice(0,10);
+    ventas = ventas.filter(v => v.fecha.toISOString().slice(0,10) === hoyYmd);
+  
+    // 4) Si es cajero, mostrar solo sus ventas
+    if(isCajero && nombreCajero){
+      ventas = ventas.filter(v => !v.cajero || v.cajero === nombreCajero);
+    }
+  
+    _ventas = ventas;
+  
+    renderKPIs();
+    await renderHistorial();
+  
+    // Listeners
+    ['fondoInicial','gastosEfe','retirosEfe'].forEach(id=>{
+      document.getElementById(id).addEventListener('input', calcularTeorico);
+    });
+    document.getElementById('btnExport').addEventListener('click', exportCSV);
+    document.getElementById('btnBorrador').addEventListener('click', guardarBorrador);
+    document.getElementById('btnConfirmarCierre').addEventListener('click', cerrarTurno);
+  });
+  </script>
+  
+</body>
+</html>
