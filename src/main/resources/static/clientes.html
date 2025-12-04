@@ -15,58 +15,48 @@
     );
   </script>
 
-<!-- NAVBAR -->
-<nav class="navbar navbar-expand-lg navbar-dark sticky-top">
-  <div class="container-fluid">
-    <a class="navbar-brand d-flex align-items-center" href="inicio.html" aria-label="Ir al inicio">
-      <img src="../img/OXXO-Logo.wine.png" class="brand-logo" alt="OXXO" width="76">
-    </a>
-    <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div id="nav" class="collapse navbar-collapse">
-      <ul class="navbar-nav me-auto" id="mainNav">
-        <li class="nav-item" data-roles="ADMIN,CAJERO">
-          <a class="nav-link" href="inicio.html">Inicio</a>
-        </li>
-        <li class="nav-item" data-roles="ADMIN,CAJERO">
-          <a class="nav-link" href="venta.html">Ventas</a>
-        </li>
-        <li class="nav-item" data-roles="ADMIN">
-          <a class="nav-link" href="inventario.html">Inventario</a>
-        </li>
-        <li class="nav-item" data-roles="ADMIN">
-          <a class="nav-link" href="productos.html">Productos</a>
-        </li>
-        <li class="nav-item" data-roles="ADMIN,CAJERO">
-          <a class="nav-link" href="clientes.html">Clientes frecuentes</a>
-        </li>
-        <li class="nav-item" data-roles="ADMIN">
-          <a class="nav-link" href="proveedores.html">Proveedores</a>
-        </li>
-        <li class="nav-item dropdown" data-roles="ADMIN">
-          <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#" role="button" aria-expanded="false">
-            Reportes
-          </a>
-          <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="reportes.html#ventas">R. Ventas</a></li>
-            <li><a class="dropdown-item" href="reportes.html#clientes">R. Clientes</a></li>
-            <li><a class="dropdown-item" href="reportes.html#productos">R. Productos</a></li>
-          </ul>
-        </li>
-        <li class="nav-item" data-roles="ADMIN,CAJERO">
-          <a class="nav-link" href="cierre.html">Cierre de caja</a>
-        </li>
-      </ul>
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+    <div class="container-fluid">
+      <a class="navbar-brand d-flex align-items-center" href="inicio.html" aria-label="Ir al inicio">
+        <img src="/img/OXXO-Logo.wine.png" class="brand-logo" alt="OXXO" width="76">
+      </a>
 
-      <div class="d-flex align-items-center gap-2">
-        <span class="navbar-text small">Hola, <strong id="navUserName">—</strong></span>
-        <a class="btn btn-outline-light btn-sm" href="cierre.html" data-roles="ADMIN,CAJERO">Cerrar turno</a>
-        <button class="btn btn-outline-light btn-sm" type="button" onclick="Auth.logout()">Salir</button>
+      <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div id="nav" class="collapse navbar-collapse">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="inicio.html">Inicio</a></li>
+          <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="venta.html">Ventas</a></li>
+          <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="clientes.html">Clientes frecuentes</a></li>
+
+          <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="inventario.html">Inventario</a></li>
+          <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="productos.html">Productos</a></li>
+          <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="proveedores.html">Proveedores</a></li>
+
+          <li class="nav-item dropdown" data-roles="ADMIN">
+            <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#">Reportes</a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="reportes.html#ventas">R. Ventas</a></li>
+              <li><a class="dropdown-item" href="reportes.html#clientes">R. Clientes</a></li>
+              <li><a class="dropdown-item" href="reportes.html#productos">R. Productos</a></li>
+            </ul>
+          </li>
+
+          <li class="nav-item" data-roles="ADMIN"><a class="nav-link active" href="usuarios.html">G. Usuarios</a></li>
+          <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="cierre.html">Cierre de caja</a></li>
+        </ul>
+
+        <div class="d-flex align-items-center gap-2">
+          <span class="navbar-text small">Hola, <strong id="navUserName">—</strong></span>
+          <a class="btn btn-outline-light btn-sm" href="cierre.html" data-roles="ADMIN,CAJERO">Cerrar turno</a>
+          <button class="btn btn-outline-light btn-sm" type="button" onclick="Auth.logout()">Salir</button>
+        </div>
       </div>
     </div>
-  </div>
-</nav>
+  </nav>
 
 <main class="container-fluid">
   <div class="row">
@@ -162,250 +152,12 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
-<script src="/js/auth.js" defer></script>
-<script src="/js/api.js"  defer></script>
-
-<script>
-  'use strict';
-
-  const $ = s => document.querySelector(s);
-  const parseNum = v => isNaN(parseFloat(v)) ? 0 : parseFloat(v);
-  const fmtMoney = n =>
-    new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' })
-      .format(Number(n || 0));
-
-  // Array que viene de la BD
-  let CLIENTES = [];
-
-  /* --------- Cargar KPIs desde la BD --------- */
-  async function loadKpis() {
-    try {
-      const r = await fetch('/api/clientes/kpis');
-      if (!r.ok) throw new Error('KPIs');
-      const k = await r.json();
-      document.getElementById('kpiClientes').textContent      = k.clientes ?? 0;
-      document.getElementById('kpiConCompras').textContent    = k.conCompras ?? 0;
-      document.getElementById('kpiPuntosTotales').textContent = k.puntosTotales ?? 0;
-      document.getElementById('kpiTicketProm').textContent    = fmtMoney(k.ticketPromHist ?? 0);
-    } catch (err) {
-      console.warn('Error KPIs clientes:', err);
-    }
-  }
-
-  /* --------- Cargar clientes desde la BD --------- */
-  async function loadClientes() {
-    try {
-      const r = await fetch('/api/clientes');
-      if (!r.ok) throw new Error('Lista clientes');
-      CLIENTES = await r.json();
-      renderClientes();
-    } catch (err) {
-      console.error('Error cargando clientes:', err);
-      CLIENTES = [];
-      renderClientes();
-    }
-  }
-
-  function renderClientes() {
-  const tbody = document.getElementById('cliBody');
-  tbody.innerHTML = '';
-
-  const q   = ($('#filtroTxt').value || '').toLowerCase();
-  const ord = $('#filtroOrden').value || 'nombre';
-
-  let data = CLIENTES.slice();
-
-  if (q) {
-    data = data.filter(c =>
-      (c.doc || '').toLowerCase().includes(q) ||
-      (c.nombre || '').toLowerCase().includes(q) ||
-      (c.telefono || '').toLowerCase().includes(q)
-    );
-  }
-
-  if (ord === 'nombre') {
-    data.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
-  } else if (ord === 'puntos') {
-    data.sort((a, b) => (b.puntos || 0) - (a.puntos || 0));
-  } else if (ord === 'compras') {
-    data.sort((a, b) => (b.compras || 0) - (a.compras || 0));
-  } else if (ord === 'recientes') {
-    data.sort((a, b) =>
-      (b.ultimaCompra || '').localeCompare(a.ultimaCompra || '')
-    );
-  }
-
-  for (const c of data) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${c.doc ?? ''}</td>
-      <td>${c.nombre ?? '-'}</td>
-      <td>${c.telefono ?? '-'}</td>
-      <td>${c.email ?? '-'}</td>
-      <td class="text-end">${c.compras ?? 0}</td>
-      <td class="text-end">${c.puntos ?? 0}</td>
-      <td>${c.ultimaCompra ? new Date(c.ultimaCompra).toLocaleString() : '—'}</td>
-      <td class="text-end">
-        <button
-          class="btn btn-sm btn-outline-primary me-1"
-          data-bs-toggle="modal"
-          data-bs-target="#modalCli"
-          onclick="openCli('${c.doc}')">
-          Editar
-        </button>
-        <button class="btn btn-sm btn-outline-secondary me-1" onclick="sumarPuntos('${c.doc}',5)">+5 pts</button>
-        <button class="btn btn-sm btn-outline-danger" onclick="eliminarCliente('${c.doc}')">Eliminar</button>
-      </td>`;
-    tbody.appendChild(tr);
-  }
-}
+<script src="/js/auth.js?v=2" defer></script>
+<script src="/js/api.js?v=2" defer></script>
+<script src="/js/clientes.js?v=2" defer></script>
 
 
-  /* --------- Modal: nuevo / editar cliente --------- */
-  function openCli(doc) {
-    const form = document.getElementById('formCli');
-    form.reset();
-    form.classList.remove('was-validated');
-    document.getElementById('editDoc').value = '';
-    const inpDoc = document.getElementById('cDoc');
-    inpDoc.disabled = false;
 
-    if (doc) {
-      const c = CLIENTES.find(x => x.doc === doc);
-      if (!c) return;
-      document.getElementById('titleCli').textContent = 'Editar cliente';
-      document.getElementById('editDoc').value = c.doc;
-      inpDoc.value = c.doc;
-      inpDoc.disabled = true;
-      document.getElementById('cNom').value  = c.nombre  || '';
-      document.getElementById('cTel').value  = c.telefono || '';
-      document.getElementById('cMail').value = c.email || '';
-      document.getElementById('cPts').value  = c.puntos ?? 0;
-    } else {
-      document.getElementById('titleCli').textContent = 'Nuevo cliente';
-      document.getElementById('cPts').value = 0;
-    }
-  }
 
-  window.openCli = openCli; // para usar en onclick
-
-  document.getElementById('formCli').addEventListener('submit', async e => {
-    e.preventDefault();
-    const f = e.currentTarget;
-    if (!f.checkValidity()) {
-      f.classList.add('was-validated');
-      return;
-    }
-
-    const edit = document.getElementById('editDoc').value;
-    const body = {
-      doc:      document.getElementById('cDoc').value.trim(),
-      nombre:   document.getElementById('cNom').value.trim(),
-      telefono: document.getElementById('cTel').value.trim() || null,
-      email:    document.getElementById('cMail').value.trim() || null,
-      puntos:   parseNum(document.getElementById('cPts').value) || 0
-    };
-
-    try {
-      let url = '/api/clientes';
-      let method = 'POST';
-      if (edit) {
-        url = `/api/clientes/${encodeURIComponent(edit)}`;
-        method = 'PUT';
-        body.doc = edit; // doc no cambia
-      }
-      const r = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-      if (!r.ok) {
-        const txt = await r.text().catch(() => '');
-        throw new Error(txt || r.statusText);
-      }
-
-      // cerrar modal y recargar datos
-      const modalEl = document.getElementById('modalCli');
-      const modal   = bootstrap.Modal.getInstance(modalEl);
-      if (modal) modal.hide();
-
-      await loadClientes();
-      await loadKpis();
-    } catch (err) {
-      alert('Error al guardar cliente: ' + (err.message || err));
-    }
-  });
-
-  /* --------- Sumar puntos por compras (relación con ventas) --------- */
-  async function sumarPuntos(doc, pts) {
-    try {
-      const url = `/api/clientes/${encodeURIComponent(doc)}/compra?puntos=${encodeURIComponent(pts)}`;
-      const r = await fetch(url, { method: 'POST' });
-      if (!r.ok) throw new Error('Error al sumar puntos');
-      await loadClientes();
-      await loadKpis();
-    } catch (err) {
-      alert('No se pudo actualizar puntos: ' + (err.message || err));
-    }
-  }
-  window.sumarPuntos = sumarPuntos;
-
-  /* --------- Eliminar cliente --------- */
-  async function eliminarCliente(doc) {
-    if (!confirm('¿Eliminar cliente ' + doc + '?')) return;
-    try {
-      const url = `/api/clientes/${encodeURIComponent(doc)}`;
-      const r = await fetch(url, { method: 'DELETE' });
-      if (!r.ok) throw new Error('Error al eliminar');
-      await loadClientes();
-      await loadKpis();
-    } catch (err) {
-      alert('No se pudo eliminar: ' + (err.message || err));
-    }
-  }
-  window.eliminarCliente = eliminarCliente;
-
-  /* --------- Exportar CSV desde datos de BD --------- */
-  document.getElementById('btnExport').addEventListener('click', () => {
-    const rows = [['doc', 'nombre', 'telefono', 'email', 'compras', 'puntos', 'ultimaCompra']];
-    CLIENTES.forEach(c => {
-      rows.push([
-        c.doc ?? '',
-        c.nombre ?? '',
-        c.telefono ?? '',
-        c.email ?? '',
-        c.compras ?? 0,
-        c.puntos ?? 0,
-        c.ultimaCompra ?? ''
-      ]);
-    });
-    const csv = rows
-      .map(r => r.map(x => `"${String(x).replace(/"/g, '""')}"`).join(','))
-      .join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'clientes.csv';
-    a.click();
-  });
-
-  /* --------- Filtros --------- */
-  document.getElementById('filtroTxt').addEventListener('input', renderClientes);
-  document.getElementById('filtroOrden').addEventListener('change', renderClientes);
-
-  /* --------- Marcar nav activo --------- */
-  (function markActive() {
-    const f = location.pathname.split('/').pop() || 'clientes.html';
-    document.querySelectorAll('.navbar-nav .nav-link').forEach(a => {
-      if (a.getAttribute('href') === f) a.classList.add('active');
-    });
-  })();
-
-  /* --------- Init --------- */
-  (async () => {
-    await loadKpis();
-    await loadClientes();
-  })();
-</script>
 </body>
 </html>

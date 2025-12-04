@@ -1,53 +1,40 @@
 package com.oxxo.config;
 
+import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
-import org.springframework.http.HttpMethod;
-import org.springframework.security.config.Customizer;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
+@EnableWebSecurity
 public class SecurityBeans {
 
-  @Bean
-  PasswordEncoder passwordEncoder() {
-    return new BCryptPasswordEncoder();
-  }
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
 
-  // Cadena SOLO para /api/**
-  @Bean
-  @Order(1)
-  SecurityFilterChain apiChain(HttpSecurity http) throws Exception {
-    http.securityMatcher("/api/**")
-        .csrf(csrf -> csrf.disable())
-        .cors(Customizer.withDefaults())
-        .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .authorizeHttpRequests(auth -> auth
-           
-            .requestMatchers("/api/**").permitAll()
-        );
-    return http.build();
-  }
+        http
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .exceptionHandling(eh -> eh.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
+                .requestMatchers("/css/**", "/js/**", "/img/**", "/images/**", "/assets/**", "/favicon.ico").permitAll()
+                .requestMatchers("/", "/index.html", "/*.html", "/error").permitAll()
+                .requestMatchers("/api/auth/**").permitAll()
 
-  // Recursos estáticos (HTML, CSS, JS)
-  @Bean
-  @Order(2)
-  SecurityFilterChain webChain(HttpSecurity http) throws Exception {
-    http.csrf(csrf -> csrf.disable())
-        .authorizeHttpRequests(auth -> auth
-            .requestMatchers(
-                "/", "/index.html",
-                "/*.html",
-                "/css/**", "/js/**", "/img/**",
-                "/favicon.ico", "/webjars/**"
-            ).permitAll()
-            .anyRequest().permitAll()
-        );
-    return http.build();
-  }
+                // ajusta si quieres roles específicos para usuarios:
+                .requestMatchers("/api/usuarios/**").authenticated()
+
+                .anyRequest().authenticated()
+            )
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
+    }
 }

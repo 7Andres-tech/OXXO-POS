@@ -2,52 +2,59 @@
 (function (global) {
   'use strict';
 
-  async function fetchJSON(url, opts={}){
-    const headers = Object.assign(
-      { 'Content-Type':'application/json' },
-      Auth.authHeader(),               // <-- agrega Bearer
-      opts.headers||{}
-    );
+  function readToken() {
+    try {
+      const a = JSON.parse(localStorage.getItem('auth') || 'null');
+      return a?.token || null; // token sin Bearer (por el auth.js nuevo)
+    } catch {
+      return null;
+    }
+  }
+
+  function withAuthHeaders(extra = {}, forceJson = true) {
+    const token = readToken();
+    const headers = { ...(extra || {}) };
+
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    if (forceJson && !headers['Content-Type']) headers['Content-Type'] = 'application/json';
+
+    return headers;
+  }
+
+  async function fetchJSON(url, opts = {}) {
+    const isFormData = opts.body instanceof FormData;
+    const headers = withAuthHeaders(opts.headers || {}, !isFormData);
+
     const r = await fetch(url, { ...opts, headers });
-    if (r.status === 401 || r.status === 403) throw new Error('UNAUTHORIZED');
-    if (!r.ok) throw new Error(await r.text());
-    return r.status === 204 ? null : r.json();
+
+    // 401 => token no sirve / no estás logueado
+    if (r.status === 401) {
+      if (global.Auth?.clear) global.Auth.clear();
+      throw new Error('UNAUTHORIZED');
+    }
+
+    // 403 => estás logueado pero sin permiso, NO borres token
+    if (r.status === 403) {
+      const txt = await r.text().catch(() => '');
+      throw new Error(txt || 'FORBIDDEN');
+    }
+
+    if (!r.ok) throw new Error(await r.text().catch(() => r.statusText));
+    if (r.status === 204) return null;
+
+    const ct = r.headers.get('content-type') || '';
+    return ct.includes('application/json') ? r.json() : r.text();
   }
 
   const API = {
-    productos: {
-      list: () => fetchJSON('/api/productos'),
-      kpis: () => fetchJSON('/api/productos/kpis'),
-      toggle: (sku,activo) => fetchJSON(`/api/productos/${encodeURIComponent(sku)}/activo`, {
-        method:'PUT', body: JSON.stringify({ activo })
-      }),
-      del: (sku) => fetchJSON(`/api/productos/${encodeURIComponent(sku)}`, { method:'DELETE' })
-    },
-    inventario: {
-      list: () => fetchJSON('/api/inventario'),
-      kpis:  () => fetchJSON('/api/inventario/kpis'),
-      ajustar: (payload) => fetchJSON('/api/inventario/ajustar', {
-        method:'POST', body: JSON.stringify(payload)
-      })
-    },
+    fetchJSON,
 
-    ventas: {
-      async registrar(payload) {
-        const r = await fetch('/api/ventas', {
-          method: 'POST',
-          headers: Auth.authHeaderJson(),  // lo mismo que usas en productos
-          body: JSON.stringify(payload)
-        });
-        if (!r.ok) throw new Error(await r.text());
-        return r.json();
-      },
-      async ultimas() {
-        const r = await fetch('/api/ventas/ultimas', { headers: Auth.authHeaderJson() });
-        if (!r.ok) throw new Error(await r.text());
-        return r.json();
-      }
+    clientes: {
+      list: () => fetchJSON('/api/clientes'),
+      crear: (payload) => fetchJSON('/api/clientes', { method: 'POST', body: JSON.stringify(payload) }),
+      actualizar: (id, payload) => fetchJSON(`/api/clientes/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(payload) }),
+      del: (id) => fetchJSON(`/api/clientes/${encodeURIComponent(id)}`, { method: 'DELETE' })
     }
-    // … añade otros módulos aquí
   };
 
   global.API = API;

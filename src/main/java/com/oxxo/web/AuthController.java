@@ -1,60 +1,56 @@
 package com.oxxo.web;
 
-import java.util.Map;
-import java.util.UUID;
-
+import com.oxxo.config.JwtTokenService;
+import com.oxxo.domain.Usuario;
+import com.oxxo.repo.UsuarioRepository;
+import com.oxxo.dto.LoginRequest;
+import com.oxxo.dto.LoginResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-
-import com.oxxo.repo.UserRepository;
 
 @RestController
 @RequestMapping("/api/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
-  record LoginReq(String email, String password) {}
-  record LoginRes(String email, String name, String role, String token) {}
+    private final AuthenticationManager authManager;
+    private final JwtTokenService       jwtTokenService;
+    private final UsuarioRepository     usuarioRepository;
 
-  private final UserRepository users;
-  private final PasswordEncoder enc;
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest req) {
 
-  public AuthController(UserRepository users, PasswordEncoder enc) {
-    this.users = users;
-    this.enc = enc;
-  }
+        // 1) autenticar por EMAIL + password
+        Authentication auth = authManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        req.getEmail(),
+                        req.getPassword()
+                )
+        );
 
-  @PostMapping("/login")
-  public ResponseEntity<?> login(@RequestBody LoginReq req) {
-    var u = users.findByEmailIgnoreCase(req.email()).orElse(null);
-    if (u == null) {
-      return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-          .body(Map.of("message","Usuario no existe"));
+        // 2) principal viene con el "username" interno (que es el email)
+        UserDetails principal = (UserDetails) auth.getPrincipal();
+
+        // 3) generar token JWT
+        String token = jwtTokenService.generarToken(principal);
+
+        Usuario u = usuarioRepository
+        .findFirstByEmailIgnoreCaseOrderByIdAsc(principal.getUsername())
+        .orElseThrow(() -> new IllegalStateException("Usuario no encontrado"));
+
+        // 5) armar respuesta para el frontend
+        LoginResponse res = new LoginResponse();
+        res.setToken(token);
+        res.setEmail(u.getEmail());
+        res.setName(u.getNombreCompleto());
+        res.setRole(u.getRol().name());
+
+        return ResponseEntity.status(HttpStatus.OK).body(res);
     }
-    if (!u.isEnabled()) {
-      return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-          .body(Map.of("message","Usuario inactivo"));
-    }
-    if (!enc.matches(req.password(), u.getPasswordHash())) {
-      return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-          .body(Map.of("message","Contraseña incorrecta"));
-    }
-
-    // 🔸 Token “dummy”, solo para que el front guarde algo
-    String token = "tok_" + UUID.randomUUID();
-
-    var res = new LoginRes(
-        u.getEmail(),
-        u.getName(),
-        u.getRole().name(),
-        token
-    );
-    return ResponseEntity.ok(res);
-  }
-
-  @GetMapping("/whoami")
-  public Map<String,Object> whoami() {
-    return Map.of("ok", true);
-  }
 }

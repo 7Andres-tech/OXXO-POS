@@ -13,26 +13,27 @@
 <body>
   <script> document.addEventListener('DOMContentLoaded', () => Auth.requireAuth(['ADMIN'])); </script>
 
-<!-- NAV -->
+<!-- NAVBAR -->
 <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
   <div class="container-fluid">
     <a class="navbar-brand d-flex align-items-center" href="inicio.html" aria-label="Ir al inicio">
       <img src="/img/OXXO-Logo.wine.png" class="brand-logo" alt="OXXO" width="76">
     </a>
+
     <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav">
       <span class="navbar-toggler-icon"></span>
     </button>
+
     <div id="nav" class="collapse navbar-collapse">
       <ul class="navbar-nav me-auto">
-        <!-- visibles para ambos -->
         <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="inicio.html">Inicio</a></li>
         <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="venta.html">Ventas</a></li>
         <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="clientes.html">Clientes frecuentes</a></li>
-      
-        <!-- solo ADMIN -->
+
         <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="inventario.html">Inventario</a></li>
         <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="productos.html">Productos</a></li>
         <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="proveedores.html">Proveedores</a></li>
+
         <li class="nav-item dropdown" data-roles="ADMIN">
           <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#">Reportes</a>
           <ul class="dropdown-menu">
@@ -41,10 +42,11 @@
             <li><a class="dropdown-item" href="reportes.html#productos">R. Productos</a></li>
           </ul>
         </li>
+
+        <li class="nav-item" data-roles="ADMIN"><a class="nav-link active" href="usuarios.html">G. Usuarios</a></li>
         <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="cierre.html">Cierre de caja</a></li>
       </ul>
-      
-      
+
       <div class="d-flex align-items-center gap-2">
         <span class="navbar-text small">Hola, <strong id="navUserName">—</strong></span>
         <a class="btn btn-outline-light btn-sm" href="cierre.html" data-roles="ADMIN,CAJERO">Cerrar turno</a>
@@ -53,6 +55,7 @@
     </div>
   </div>
 </nav>
+
 
 <!-- CONTENT -->
 <main class="container-fluid with-sidebar">

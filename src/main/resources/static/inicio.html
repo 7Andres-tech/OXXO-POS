@@ -10,39 +10,46 @@
   <style>
     .kpi .card-body{min-height:92px}
     .table-fixed-head thead th{position:sticky;top:0;background:#212529;color:#fff;z-index:1}
-    /* Contenedor con altura fija para el gráfico */
-.chart-fixed{
-  position: relative;
-  height: 220px;          /* ← ajusta si quieres 200–260px */
-}
 
-/* Forzar la misma altura al canvas y evitar herencias tipo height:100% */
-.chart-fixed canvas{
-  width: 100% !important;
-  height: 220px !important;   /* ← igual que el contenedor */
-  max-height: 220px !important;
-}
+    .chart-fixed{ position: relative; height: 220px; }
+    .chart-fixed canvas{
+      width: 100% !important;
+      height: 220px !important;
+      max-height: 220px !important;
+    }
+
+    .mini-muted{ color:#6c757d; font-size:.9rem; }
   </style>
 </head>
 <body>
-  <!-- NAVBAR (sin Reportes) -->
-  <nav class="navbar navbar-expand-lg navbar-dark sticky-top" style="background:#c00">
+  <!-- Requiere sesión (ADMIN o CAJERO) -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      try { window.Auth?.requireAuth?.(['ADMIN','CAJERO']); } catch(e) {}
+    });
+  </script>
+
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
     <div class="container-fluid">
       <a class="navbar-brand d-flex align-items-center" href="inicio.html" aria-label="Ir al inicio">
-        <img src="../img/OXXO-Logo.wine.png" class="brand-logo" alt="OXXO" width="76">
+        <img src="/img/OXXO-Logo.wine.png" class="brand-logo" alt="OXXO" width="76">
       </a>
-      <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav"><span class="navbar-toggler-icon"></span></button>
+
+      <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
       <div id="nav" class="collapse navbar-collapse">
         <ul class="navbar-nav me-auto">
-          <!-- visibles para ambos -->
-          <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="inicio.html">Inicio</a></li>
+          <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link active" href="inicio.html">Inicio</a></li>
           <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="venta.html">Ventas</a></li>
           <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="clientes.html">Clientes frecuentes</a></li>
-        
-          <!-- solo ADMIN -->
+
           <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="inventario.html">Inventario</a></li>
           <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="productos.html">Productos</a></li>
           <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="proveedores.html">Proveedores</a></li>
+
           <li class="nav-item dropdown" data-roles="ADMIN">
             <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#">Reportes</a>
             <ul class="dropdown-menu">
@@ -51,9 +58,16 @@
               <li><a class="dropdown-item" href="reportes.html#productos">R. Productos</a></li>
             </ul>
           </li>
+
+          <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="usuarios.html">G. Usuarios</a></li>
           <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="cierre.html">Cierre de caja</a></li>
         </ul>
-        
+
+        <div class="d-flex align-items-center gap-2">
+          <span class="navbar-text small">Hola, <strong id="navUserName">—</strong></span>
+          <a class="btn btn-outline-light btn-sm" href="cierre.html" data-roles="ADMIN,CAJERO">Cerrar turno</a>
+          <button class="btn btn-outline-light btn-sm" type="button" onclick="Auth.logout()">Salir</button>
+        </div>
       </div>
     </div>
   </nav>
@@ -63,6 +77,7 @@
       <div class="col-12 col-xxl-10 mx-auto px-3 px-md-4">
         <div class="pt-3 pb-2 border-bottom">
           <h1 class="h3 fw-bold text-danger">📊 Dashboard general</h1>
+          <div id="dashHint" class="mini-muted">Cargando información…</div>
         </div>
 
         <!-- KPIs -->
@@ -106,8 +121,8 @@
               <div class="card shadow-sm"><div class="card-body">
                 <h6 class="m-0">Ventas últimos 7 días</h6>
                 <div class="chart-fixed">
-                <canvas id="chVentas7" height="180"></canvas>
-              </div>
+                  <canvas id="chVentas7"></canvas>
+                </div>
               </div></div>
             </div>
             <div class="col-lg-6">
@@ -115,8 +130,12 @@
                 <h6 class="mb-2">Últimos comprobantes</h6>
                 <div class="table-responsive table-fixed-head" style="max-height:320px">
                   <table class="table table-sm align-middle">
-                    <thead class="table-dark"><tr><th>ID</th><th>Fecha</th><th>Medio</th><th class="text-end">Total</th></tr></thead>
-                    <tbody id="tbVentas"></tbody>
+                    <thead class="table-dark">
+                      <tr><th>ID</th><th>Fecha</th><th>Medio</th><th class="text-end">Total</th></tr>
+                    </thead>
+                    <tbody id="tbVentas">
+                      <tr><td colspan="4" class="text-muted">Cargando…</td></tr>
+                    </tbody>
                   </table>
                 </div>
               </div></div>
@@ -139,42 +158,76 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
-  <!-- Si tienes /js/api.js con auth/interceptores, puede quedarse. No es obligatorio para este dashboard -->
-  <!-- <script src="/js/api.js"></script> -->
   <script src="/js/auth.js" defer></script>
-<script src="/js/api.js"  defer></script>
+  <script src="/js/api.js"  defer></script>
+
   <script>
-  /* ===== Utils ===== */
+  /* ===========================
+     DASHBOARD CON JWT (FIX)
+     =========================== */
+
   const PEN = new Intl.NumberFormat('es-PE',{style:'currency',currency:'PEN'});
   const fmt = n => PEN.format(Number(n||0));
   const df  = d => d ? new Date(d) : null;
   const ymd = d => d.toISOString().slice(0,10);
   const setText = (id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
 
-  /* ===== Endpoints autodetect ===== */
-  const Endpoints = { productos:null, inventario:null, proveedores:null, clientes:null, ventas:null };
+  function authHeaders() {
+    const h = (window.Auth && typeof Auth.authHeader === 'function') ? Auth.authHeader() : {};
+    return { 'Content-Type':'application/json', ...h };
+  }
+  function isAuthError(res){ return res.status === 401 || res.status === 403; }
+
+  async function fetchJSON(url, opts = {}) {
+    const r = await fetch(url, { headers: authHeaders(), cache:'no-store', ...opts });
+
+    if (isAuthError(r)) {
+      alert('Sesión expirada o sin permisos. Vuelve a iniciar sesión.');
+      try { window.Auth?.clear?.(); } catch(e) {}
+      location.href = 'index.html';
+      throw new Error('unauthorized');
+    }
+    if (!r.ok) {
+      const msg = (await r.text().catch(()=>'')) || r.statusText;
+      throw new Error(msg);
+    }
+    if (r.status === 204) return null;
+    return r.json().catch(()=> ({}));
+  }
+
+  /* ===== Endpoints (prioridad a los tuyos reales) ===== */
+  const Endpoints = {
+    productos:   null,
+    inventario:  null,
+    proveedores: null,
+    clientes:    null,
+    ventas:      null
+  };
+
   async function resolveFirst(paths){
     for(const p of paths){
-      try{ const r=await fetch(p,{method:'HEAD'}); if(r.ok) return p; }catch(_){}
-      try{ const r=await fetch(p); if(r.ok) return p; }catch(_){}
+      try {
+        // GET con auth (tu backend suele bloquear sin token)
+        const r = await fetch(p, { headers: authHeaders(), cache:'no-store' });
+        if (r.ok) return p;
+      } catch(_) {}
     }
     return null;
   }
+
   async function resolveAll(){
-    Endpoints.productos   = await resolveFirst(['/api/productos','/api/v1/productos','/productos']);
-    Endpoints.inventario  = await resolveFirst(['/api/inventario','/api/v1/inventario','/inventario','/api/items']);
-    Endpoints.proveedores = await resolveFirst(['/api/proveedores','/api/v1/proveedores','/proveedores']);
-    Endpoints.clientes    = await resolveFirst(['/api/clientes','/api/v1/clientes','/clientes']);
-    Endpoints.ventas      = await resolveFirst(['/api/ventas','/api/v1/ventas','/ventas']);
-    console.log('API:', Endpoints);
+    // Ajustado a rutas típicas tuyas (si alguna no existe, se prueba alternativa)
+    Endpoints.productos   = await resolveFirst(['/api/productos','/productos','/api/v1/productos']);
+    Endpoints.inventario  = await resolveFirst(['/api/inventario','/inventario','/api/v1/inventario']);
+    Endpoints.proveedores = await resolveFirst(['/api/proveedores','/proveedores','/api/v1/proveedores']);
+    Endpoints.clientes    = await resolveFirst(['/api/clientes','/clientes','/api/v1/clientes']);
+    Endpoints.ventas      = await resolveFirst(['/api/ventas','/ventas','/api/v1/ventas']);
+    console.log('API RESUELTA:', Endpoints);
   }
 
-  /* ===== Fetch flexible ===== */
   async function getArray(url){
     if(!url) return [];
-    const r = await fetch(url);
-    if(!r.ok) return [];
-    const j = await r.json();
+    const j = await fetchJSON(url, { method:'GET' });
     if (Array.isArray(j)) return j;
     if (Array.isArray(j?.content)) return j.content;
     if (Array.isArray(j?.items))   return j.items;
@@ -182,14 +235,48 @@
     return [];
   }
 
-  /* ===== State ===== */
   const state = { productos:[], inventario:[], proveedores:[], clientes:[], ventas:[] };
-  let chVentas7;
 
-  /* ===== Init ===== */
+  function setNavUser(){
+    // intenta varias formas sin romper si no existe
+    try {
+      const u =
+        (window.Auth?.getUser?.()) ||
+        (window.Auth?.user) ||
+        JSON.parse(localStorage.getItem('auth.user') || 'null') ||
+        JSON.parse(localStorage.getItem('user') || 'null') ||
+        null;
+
+      const name =
+        u?.nombreCompleto || u?.nombre || u?.username || u?.email || '—';
+
+      setText('navUserName', name);
+    } catch(e) {}
+  }
+
   document.addEventListener('DOMContentLoaded', async ()=>{
-    await resolveAll();
-    await refreshAll();
+    setNavUser();
+
+    // placeholders rápidos
+    setText('k_ventas_hoy','S/ 0.00');
+    setText('k_ticket_hoy','S/ 0.00');
+    setText('k_prod_activos','0');
+    setText('k_prod_cats','0');
+    setText('k_inv_bajo','0');
+    setText('k_inv_cero','0');
+    setText('k_cli_activos','0');
+    setText('k_cli_ult','—');
+
+    try{
+      await resolveAll();
+      await refreshAll();
+      document.getElementById('dashHint').textContent = 'Información actualizada desde la base de datos.';
+    }catch(e){
+      console.error(e);
+      document.getElementById('dashHint').textContent =
+        'No se pudo cargar el dashboard. Revisa endpoints o permisos.';
+      // no reventamos la vista
+    }
   });
 
   async function refreshAll(){
@@ -200,18 +287,24 @@
       getArray(Endpoints.clientes),
       getArray(Endpoints.ventas),
     ]);
-    state.productos=P||[]; state.inventario=I||[]; state.proveedores=PR||[]; state.clientes=C||[]; state.ventas=V||[];
 
-    // ===== Enriquecer inventario con producto y proveedor (join) =====
+    state.productos   = P||[];
+    state.inventario  = I||[];
+    state.proveedores = PR||[];
+    state.clientes    = C||[];
+    state.ventas      = V||[];
+
+    // join inventario -> producto/proveedor (si aplica)
     const mapProdBySku = new Map(state.productos.map(p=>[String(p.sku ?? p.codigo ?? p.id ?? p.producto_id), p]));
     const mapProdById  = new Map(state.productos.map(p=>[String(p.id ?? p.producto_id), p]));
     const mapProvById  = new Map(state.proveedores.map(pr=>[String(pr.id ?? pr.proveedorId ?? pr.codigo), pr]));
+
     state.inventario = state.inventario.map(i=>{
       const p = mapProdBySku.get(String(i.sku ?? '')) || mapProdById.get(String(i.productoId ?? i.producto_id ?? ''));
       const prov = mapProvById.get(String(i.proveedorId ?? i.proveedor_id ?? ''));
       return {
         ...i,
-        nombre:    i.nombre    ?? p?.nombre   ?? i.sku ?? i.producto ?? null,
+        nombre:    i.nombre    ?? p?.nombre    ?? i.sku ?? i.producto ?? null,
         categoria: i.categoria ?? p?.categoria ?? null,
         proveedor: i.proveedor ?? prov?.nombre ?? prov?.razonSocial ?? i.proveedorId ?? null
       };
@@ -222,14 +315,13 @@
     renderAlertas();
   }
 
-  /* ===== KPIs ===== */
   function renderKPIs(){
     // Productos
     const P = state.productos;
     const activos = P.filter(p=>p.activo===true || p.activo==='true').length || P.length || 0;
     setText('k_prod_activos', activos);
+
     const cats = new Set(P.map(p=>p.categoria).filter(Boolean));
-    // Si productos no trae categoría, probamos desde inventario enriquecido
     if(cats.size===0){
       state.inventario.forEach(i=>{ if(i.categoria) cats.add(i.categoria); });
     }
@@ -244,41 +336,61 @@
 
     // Clientes
     const C = state.clientes||[];
-    setText('k_cli_activos', C.filter(c=>c.activo===true || c.activo==='true').length);
-    const u = C.map(c=>df(c.ultima_compra || c.ultimaCompra)).filter(Boolean).sort((a,b)=>b-a);
-    setText('k_cli_ult', u.length? u[0].toLocaleDateString('es-PE') : '—');
+    setText('k_cli_activos', C.filter(c=>c.activo===true || c.activo==='true').length || C.length || 0);
+    const ult = C.map(c=>df(c.ultima_compra || c.ultimaCompra)).filter(Boolean).sort((a,b)=>b-a);
+    setText('k_cli_ult', ult.length? ult[0].toLocaleDateString('es-PE') : '—');
 
     // Ventas hoy
-    const hoy=new Date(); const ini=new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate()); const fin=new Date(ini); fin.setDate(ini.getDate()+1);
-    const V = state.ventas.map(v=>({...v,_f:df(v.fecha||v.fechaEmision||v.fecha_venta)})).filter(v=>v._f && v._f>=ini && v._f<fin);
+    const hoy=new Date();
+    const ini=new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate());
+    const fin=new Date(ini); fin.setDate(ini.getDate()+1);
+
+    const V = state.ventas
+      .map(v=>({...v,_f:df(v.fecha||v.fechaEmision||v.fecha_venta)}))
+      .filter(v=>v._f && v._f>=ini && v._f<fin);
+
     const total = V.reduce((s,v)=>s+Number(v.total||v.importe||v.monto||0),0);
     setText('k_ventas_hoy', fmt(total));
     setText('k_ticket_hoy', fmt(V.length? total/V.length : 0));
   }
 
-  /* ===== Ventas: tabla + serie 7 días ===== */
   function renderVentas(){
-    const tb=document.getElementById('tbVentas'); tb.innerHTML='';
-    const vts = state.ventas.map(v=>({...v,_f:df(v.fecha||v.fechaEmision||v.fecha_venta)}))
-                            .filter(v=>v._f).sort((a,b)=>b._f-a._f).slice(0,30);
-    for(const v of vts){
-      tb.insertAdjacentHTML('beforeend', `
-        <tr>
-          <td>${v.id ?? '-'}</td>
-          <td>${v._f.toLocaleString('es-PE')}</td>
-          <td>${v.medio_pago ?? v.medio ?? v.metodo ?? '-'}</td>
-          <td class="text-end">${fmt(v.total ?? v.importe ?? v.monto)}</td>
-        </tr>
-      `);
+    const tb=document.getElementById('tbVentas');
+    tb.innerHTML='';
+
+    const vts = state.ventas
+      .map(v=>({...v,_f:df(v.fecha||v.fechaEmision||v.fecha_venta)}))
+      .filter(v=>v._f)
+      .sort((a,b)=>b._f-a._f)
+      .slice(0,30);
+
+    if(!vts.length){
+      tb.innerHTML = `<tr><td colspan="4" class="text-muted">Sin ventas registradas.</td></tr>`;
+    } else {
+      for(const v of vts){
+        tb.insertAdjacentHTML('beforeend', `
+          <tr>
+            <td>${v.id ?? '-'}</td>
+            <td>${v._f.toLocaleString('es-PE')}</td>
+            <td>${v.medio_pago ?? v.medio ?? v.metodo ?? '-'}</td>
+            <td class="text-end">${fmt(v.total ?? v.importe ?? v.monto)}</td>
+          </tr>
+        `);
+      }
     }
 
     // Serie últimos 7 días
-    const map=new Map(); const today=new Date(); const start=new Date(today.getFullYear(),today.getMonth(),today.getDate()-6);
+    const map=new Map();
+    const today=new Date();
+    const start=new Date(today.getFullYear(),today.getMonth(),today.getDate()-6);
+
     for(const v of state.ventas){
-      const f=df(v.fecha||v.fechaEmision||v.fecha_venta); if(!f || f<start) continue;
+      const f=df(v.fecha||v.fechaEmision||v.fecha_venta);
+      if(!f || f<start) continue;
       const k=ymd(new Date(f.getFullYear(),f.getMonth(),f.getDate()));
       map.set(k,(map.get(k)||0)+Number(v.total||v.importe||v.monto||0));
     }
+
     const labels=[], data=[];
     for(let i=6;i>=0;i--){
       const d=new Date(today.getFullYear(),today.getMonth(),today.getDate()-i);
@@ -289,69 +401,58 @@
     drawLine('chVentas7', labels, data);
   }
 
-  function drawLine(id, labels, data){
-  const el = document.getElementById(id);
-  if (el._chart) el._chart.destroy();
-
-  // Fuerza de seguridad: setea altura también desde JS
-  const box = el.parentElement;
-  if (box && box.classList.contains('chart-fixed')) {
-    box.style.height = '220px';
+  function niceMax(m){
+    const o = Math.pow(10, Math.floor(Math.log10(m)));
+    return Math.ceil((m*1.1)/o)*o;
   }
-  el.style.height   = '220px';
-  el.style.maxHeight= '220px';
-  el.height = 220;
 
-  // Datos saneados
-  const vals = data.map(v => Math.max(0, Number(v) || 0));
+  function drawLine(id, labels, data){
+    const el = document.getElementById(id);
+    if (el._chart) el._chart.destroy();
 
-  // Techo estable (si todo es 0, usa 1)
-  const rawMax = Math.max(0, ...vals);
-  const max    = rawMax > 0 ? niceMax(rawMax) : 1;
+    // altura fija
+    const box = el.parentElement;
+    if(box && box.classList.contains('chart-fixed')) box.style.height='220px';
+    el.height = 220;
 
-  el._chart = new Chart(el, {
-    type: 'line',
-    data: { labels, datasets: [{ label: 'Ventas (S/)', data: vals, tension: .25, pointRadius: 2, borderWidth: 2, fill: false }] },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,   // usamos altura fija del contenedor
-      animation: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: (ctx) => PEN.format(ctx.parsed.y) } }
-      },
-      scales: {
-        y: {
-          beginAtZero: true,
-          min: 0,
-          max,                      // techo fijo: no se “hunde”
-          grace: '5%',
-          ticks: { callback: (v) => PEN.format(v) }
+    const vals = data.map(v => Math.max(0, Number(v)||0));
+    const rawMax = Math.max(0, ...vals);
+    const max = rawMax > 0 ? niceMax(rawMax) : 1;
+
+    el._chart = new Chart(el, {
+      type: 'line',
+      data: { labels, datasets: [{ label:'Ventas (S/)', data: vals, tension:.25, pointRadius:2, borderWidth:2, fill:false }] },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: (ctx)=>PEN.format(ctx.parsed.y) } }
+        },
+        scales: {
+          y: { beginAtZero:true, min:0, max, ticks:{ callback:(v)=>PEN.format(v) } }
         }
       }
-    }
-  });
-}
+    });
+  }
 
-function niceMax(m){
-  const o = Math.pow(10, Math.floor(Math.log10(m)));
-  return Math.ceil((m * 1.1) / o) * o;  // ~10% arriba y redondeo “bonito”
-}
-
-  function niceMax(m){ const o=Math.pow(10,Math.floor(Math.log10(m))); return Math.ceil((m*1.1)/o)*o; }
-
-  /* ===== Alertas: stock 0 y caducidad <= 3 días (con proveedor/categoría) ===== */
   function renderAlertas(){
     const I=state.inventario||[];
-    const ul=document.getElementById('ulAlertas'); ul.innerHTML='';
-    const hoy=new Date(); const lim=new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate()+3);
+    const ul=document.getElementById('ulAlertas');
+    ul.innerHTML='';
+
+    const hoy=new Date();
+    const lim=new Date(hoy.getFullYear(),hoy.getMonth(),hoy.getDate()+3);
 
     const quiebres = I.filter(i=>Number(i.stock||0)===0);
     const caduca   = I.filter(i=>i.vence && df(i.vence) && df(i.vence)<=lim);
 
     if(!quiebres.length && !caduca.length){
-      ul.innerHTML='<li class="list-group-item text-muted">Sin alertas por ahora.</li>'; return;
+      ul.innerHTML='<li class="list-group-item text-muted">Sin alertas por ahora.</li>';
+      return;
     }
+
     for(const q of quiebres){
       ul.insertAdjacentHTML('beforeend',
         `<li class="list-group-item d-flex justify-content-between">
@@ -359,6 +460,7 @@ function niceMax(m){
           <span class="badge bg-danger">Stock 0</span>
         </li>`);
     }
+
     for(const c of caduca){
       const f=df(c.vence).toLocaleDateString('es-PE');
       ul.insertAdjacentHTML('beforeend',

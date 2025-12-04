@@ -46,7 +46,7 @@
       <!-- IZQUIERDA: LOGIN -->
       <div class="auth-card">
         <div class="auth-header">
-          <img src="../img/OXXO-Logo.wine.png" alt="OXXO" class="brand-logo">
+          <img src="/img/OXXO-Logo.wine.png" alt="OXXO" class="brand-logo">
           <p class="text-muted mb-3">Inicia sesión</p>
         </div>
 
@@ -74,15 +74,12 @@
                 <input class="form-check-input" type="checkbox" id="remember" checked>
                 <label class="form-check-label" for="remember">Recordarme</label>
               </div>
-              <a href="#" class="small text-decoration-none">¿Olvidaste tu contraseña?</a>
+             
             </div>
 
             <button class="btn btn-oxxo btn-lg w-100" type="submit">INGRESAR</button>
 
-            <div class="text-center mt-3">
-              <a href="#" class="small d-block text-decoration-none">¿Olvidaste tu contraseña?</a>
-              <a href="#" class="small text-decoration-none">Crear cuenta</a>
-            </div>
+            
 
            
             <p class="text-center text-muted small mt-2 mb-0">© 2025 OXXO • v1.0</p>
@@ -92,7 +89,7 @@
 
       <!-- DERECHA: IMAGEN MISMO TAMAÑO -->
       <div class="auth-hero">
-        <img src="../img/tienda.png" alt="Tienda OXXO">
+        <img src="/img/tienda.png" alt="Tienda OXXO">
       </div>
 
     </div>
@@ -137,8 +134,7 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email, password })
-        });
-  
+        }); 
         if (!r.ok) {
           const msg = (await r.json().catch(()=>({}))).message || (r.status === 401 ? 'Credenciales inválidas' : 'Error al iniciar sesión');
           throw new Error(msg);

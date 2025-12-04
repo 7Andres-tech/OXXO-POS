@@ -1,0 +1,744 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>OXXO | Usuarios</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="icon" href="/img/favicon.ico">
+
+  <style>
+    .kpi-card { min-height: 92px; }
+    .table thead th { white-space: nowrap; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+  </style>
+</head>
+
+<body>
+  <!-- Sólo ADMIN -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => Auth.requireAuth(['ADMIN']));
+  </script>
+
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+    <div class="container-fluid">
+      <a class="navbar-brand d-flex align-items-center" href="inicio.html" aria-label="Ir al inicio">
+        <img src="/img/OXXO-Logo.wine.png" class="brand-logo" alt="OXXO" width="76">
+      </a>
+
+      <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div id="nav" class="collapse navbar-collapse">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="inicio.html">Inicio</a></li>
+          <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="venta.html">Ventas</a></li>
+          <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="clientes.html">Clientes frecuentes</a></li>
+
+          <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="inventario.html">Inventario</a></li>
+          <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="productos.html">Productos</a></li>
+          <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="proveedores.html">Proveedores</a></li>
+
+          <li class="nav-item dropdown" data-roles="ADMIN">
+            <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#">Reportes</a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="reportes.html#ventas">R. Ventas</a></li>
+              <li><a class="dropdown-item" href="reportes.html#clientes">R. Clientes</a></li>
+              <li><a class="dropdown-item" href="reportes.html#productos">R. Productos</a></li>
+            </ul>
+          </li>
+
+          <li class="nav-item" data-roles="ADMIN"><a class="nav-link active" href="usuarios.html">Usuarios</a></li>
+          <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="cierre.html">Cierre de caja</a></li>
+        </ul>
+
+        <div class="d-flex align-items-center gap-2">
+          <span class="navbar-text small">Hola, <strong id="navUserName">—</strong></span>
+          <a class="btn btn-outline-light btn-sm" href="cierre.html" data-roles="ADMIN,CAJERO">Cerrar turno</a>
+          <button class="btn btn-outline-light btn-sm" type="button" onclick="Auth.logout()">Salir</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- CONTENIDO -->
+  <main class="container-fluid with-sidebar">
+    <div class="row">
+      <div class="col-12 px-3 px-md-4">
+
+        <!-- Header -->
+        <div class="pt-3 pb-2 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+          <div>
+            <h1 class="h4 fw-bold text-danger m-0">👥 Gestión de usuarios</h1>
+            <div class="small text-muted">Administra usuarios (ADMIN/CAJERO): listar, crear, editar y eliminar.</div>
+          </div>
+
+          <div class="d-flex gap-2">
+            <button class="btn btn-danger" id="btnNuevo">
+              + Nuevo usuario
+            </button>
+            <button class="btn btn-outline-secondary" id="btnExport">
+              Exportar CSV
+            </button>
+          </div>
+        </div>
+
+        <!-- KPIs -->
+        <div class="row g-3 mt-1">
+          <div class="col-12 col-md-3">
+            <div class="card shadow-sm kpi-card">
+              <div class="card-body">
+                <div class="small text-muted">Usuarios</div>
+                <div class="fs-5 fw-bold" id="kpiTotal">0</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-md-3">
+            <div class="card shadow-sm kpi-card">
+              <div class="card-body">
+                <div class="small text-muted">Activos</div>
+                <div class="fs-5 fw-bold" id="kpiActivos">0</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-md-3">
+            <div class="card shadow-sm kpi-card">
+              <div class="card-body">
+                <div class="small text-muted">Admins</div>
+                <div class="fs-5 fw-bold" id="kpiAdmins">0</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-md-3">
+            <div class="card shadow-sm kpi-card">
+              <div class="card-body">
+                <div class="small text-muted">Cajeros</div>
+                <div class="fs-5 fw-bold" id="kpiCajeros">0</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Herramientas -->
+        <div class="d-flex flex-wrap gap-2 align-items-center mt-3">
+          <div class="input-group" style="max-width: 420px;">
+            <span class="input-group-text">Buscar</span>
+            <input id="txtBuscar" class="form-control" placeholder="usuario, nombre, email, rol...">
+          </div>
+
+          <div class="input-group" style="max-width: 220px;">
+            <span class="input-group-text">Rol</span>
+            <select id="selRol" class="form-select">
+              <option value="">Todos</option>
+              <option value="ADMIN">ADMIN</option>
+              <option value="CAJERO">CAJERO</option>
+            </select>
+          </div>
+
+          <div class="input-group" style="max-width: 220px;">
+            <span class="input-group-text">Estado</span>
+            <select id="selEstado" class="form-select">
+              <option value="">Todos</option>
+              <option value="true">Activos</option>
+              <option value="false">Inactivos</option>
+            </select>
+          </div>
+
+          <div class="ms-auto small text-muted" id="lblInfo"></div>
+        </div>
+
+        <!-- Alertas -->
+        <div class="mt-3">
+          <div id="msgOk" class="alert alert-success d-none" role="alert"></div>
+          <div id="msgErr" class="alert alert-danger d-none" role="alert"></div>
+        </div>
+
+        <!-- Tabla -->
+        <div class="card shadow-sm mt-2">
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover mb-0 align-middle">
+                <thead class="table-dark">
+                  <tr>
+                    <th>Usuario</th>
+                    <th>Nombre</th>
+                    <th>Email</th>
+                    <th>Rol</th>
+                    <th>Estado</th>
+                    <th style="width: 160px;" class="text-end">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tbUsers">
+                  <tr><td colspan="6" class="p-4 text-center text-muted">Cargando...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Crear/Editar -->
+  <div class="modal fade" id="mdlUser" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <form id="formUser" class="needs-validation" novalidate>
+          <div class="modal-header">
+            <h5 class="modal-title" id="mdlTitle">Nuevo usuario</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+
+          <div class="modal-body">
+            <input type="hidden" id="uKey">
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">Usuario (login)</label>
+                <input id="uUsername" class="form-control" required autocomplete="off">
+                <div class="invalid-feedback">Usuario requerido.</div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Rol</label>
+                <select id="uRol" class="form-select" required>
+                  <option value="">Selecciona rol...</option>
+                  <option value="ADMIN">Administrador</option>
+                  <option value="CAJERO">Cajero</option>
+                </select>
+                <div class="invalid-feedback">Rol requerido.</div>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Nombre completo</label>
+                <input id="uNombre" class="form-control" required>
+                <div class="invalid-feedback">Nombre requerido.</div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">DNI</label>
+                <input id="uDni" class="form-control" maxlength="15" autocomplete="off">
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Correo electrónico</label>
+                <input id="uEmail" type="email" class="form-control">
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Estado</label>
+                <select id="uActivo" class="form-select">
+                  <option value="true" selected>Activo</option>
+                  <option value="false">Inactivo</option>
+                </select>
+              </div>
+
+              <div class="col-12">
+                <label class="form-label">Notas (opcional)</label>
+                <textarea id="uNotas" class="form-control" rows="2" placeholder="Ej: Cajero de turno mañana."></textarea>
+              </div>
+
+              <!-- Password: requerido SOLO en crear; opcional en editar -->
+              <div class="col-md-6">
+                <label class="form-label">Contraseña <span class="text-muted small" id="passHint"></span></label>
+                <input id="uPass" type="password" class="form-control" minlength="4">
+                <div class="invalid-feedback">Contraseña mínima de 4 caracteres.</div>
+              </div>
+
+              <div class="col-md-6">
+                <label class="form-label">Confirmar contraseña</label>
+                <input id="uPass2" type="password" class="form-control" minlength="4">
+                <div class="invalid-feedback">Las contraseñas deben coincidir.</div>
+              </div>
+
+              <div class="col-12">
+                <div class="alert alert-warning py-2 small mb-0">
+                  <strong>Tip:</strong> en <em>Editar</em>, deja la contraseña vacía si no quieres cambiarla.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">Cancelar</button>
+            <button class="btn btn-danger" type="submit" id="btnGuardar">Guardar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="/js/auth.js" defer></script>
+  <script src="/js/api.js" defer></script>
+
+  <script>
+  (function(){
+    'use strict';
+
+    const $ = (id) => document.getElementById(id);
+    const tb = $('tbUsers');
+    const mdlEl = $('mdlUser');
+    const mdl = new bootstrap.Modal(mdlEl);
+
+    let baseUsersApi = null; // se descubre
+    let allUsers = [];
+
+    function hideMsgs(){
+      $('msgOk').classList.add('d-none');
+      $('msgErr').classList.add('d-none');
+      $('msgOk').textContent = '';
+      $('msgErr').textContent = '';
+    }
+    function ok(msg){
+      $('msgOk').textContent = msg || 'OK';
+      $('msgOk').classList.remove('d-none');
+      $('msgErr').classList.add('d-none');
+    }
+    function err(msg){
+      $('msgErr').textContent = msg || 'Error';
+      $('msgErr').classList.remove('d-none');
+      $('msgOk').classList.add('d-none');
+    }
+
+    function authHeaders(forceJson = true){
+      const h = (window.Auth && typeof Auth.authHeader === 'function') ? Auth.authHeader() : {};
+      const headers = { ...h };
+      if (forceJson) headers['Content-Type'] = 'application/json';
+      return headers;
+    }
+
+    async function fetchAny(url, opts = {}){
+      const isFormData = opts.body instanceof FormData;
+      const r = await fetch(url, { ...opts, headers: { ...(opts.headers||{}), ...authHeaders(!isFormData) } });
+
+      if (r.status === 401 || r.status === 403){
+        alert('Sesión expirada o sin permisos. Inicia sesión nuevamente.');
+        if (window.Auth?.clear) Auth.clear();
+        location.href = 'index.html';
+        throw new Error('UNAUTHORIZED');
+      }
+      if (!r.ok){
+        const t = await r.text().catch(()=> '');
+        const msg = t || r.statusText || ('HTTP ' + r.status);
+        const e = new Error(msg);
+        e.status = r.status;
+        throw e;
+      }
+      if (r.status === 204) return null;
+
+      const ct = r.headers.get('content-type') || '';
+      return ct.includes('application/json') ? r.json() : r.text();
+    }
+
+    // ---------- Endpoints (auto-detección) ----------
+    const LIST_CANDIDATES = ['/api/usuarios', '/api/users', '/usuarios'];
+
+    async function discoverUsersApi(){
+      if (baseUsersApi) return baseUsersApi;
+      for (const u of LIST_CANDIDATES){
+        try {
+          await fetchAny(u, { method:'GET' });
+          baseUsersApi = u;
+          return baseUsersApi;
+        } catch(e){
+          // si es 404 probamos otro, si es 401/403 ya lo manejó fetchAny
+        }
+      }
+      throw new Error('No encontré un endpoint de usuarios. Probé: ' + LIST_CANDIDATES.join(', '));
+    }
+
+    // para update/delete: probamos varias formas comunes
+    async function tryWithKeys(verb, base, key, payload){
+      const tries = [
+        `${base}/${encodeURIComponent(key)}`,
+        `${base}/username/${encodeURIComponent(key)}`,
+        `${base}/id/${encodeURIComponent(key)}`
+      ];
+      let last = null;
+      for (const url of tries){
+        try{
+          return await fetchAny(url, {
+            method: verb,
+            body: payload ? JSON.stringify(payload) : undefined
+          });
+        }catch(e){
+          last = e;
+          if (e.status && e.status !== 404) break; // si NO es 404, paramos
+        }
+      }
+      throw last || new Error('No se pudo completar la operación');
+    }
+
+    // ---------- Normalización ----------
+    function pickKey(u){
+      return u?.id ?? u?.usuarioId ?? u?.userId ?? u?.username ?? u?.user ?? u?.login ?? u?.email;
+    }
+    function pickUsername(u){
+      return u?.username ?? u?.user ?? u?.login ?? u?.email ?? '';
+    }
+    function pickName(u){
+      return u?.nombreCompleto ?? u?.nombre ?? u?.fullName ?? u?.name ?? '';
+    }
+    function pickEmail(u){
+      return u?.email ?? u?.correo ?? '';
+    }
+    function pickRole(u){
+      const r = (u?.rol ?? u?.role ?? u?.perfil ?? '').toString().toUpperCase();
+      return r.startsWith('ROLE_') ? r.substring(5) : r;
+    }
+    function pickActive(u){
+      const v = (u?.activo ?? u?.active ?? u?.enabled);
+      if (typeof v === 'boolean') return v;
+      if (typeof v === 'string') return v.toLowerCase() === 'true';
+      return true;
+    }
+
+    function unwrapList(data){
+      // soporta: []  ó {content: []} ó {data: []}
+      if (Array.isArray(data)) return data;
+      if (data && Array.isArray(data.content)) return data.content;
+      if (data && Array.isArray(data.data)) return data.data;
+      return [];
+    }
+
+    // ---------- Render ----------
+    function renderKpis(list){
+      const total = list.length;
+      const activos = list.filter(pickActive).length;
+      const admins = list.filter(u => pickRole(u) === 'ADMIN').length;
+      const cajeros = list.filter(u => pickRole(u) === 'CAJERO').length;
+
+      $('kpiTotal').textContent = total;
+      $('kpiActivos').textContent = activos;
+      $('kpiAdmins').textContent = admins;
+      $('kpiCajeros').textContent = cajeros;
+    }
+
+    function badgeRole(r){
+      if (r === 'ADMIN') return `<span class="badge text-bg-danger">ADMIN</span>`;
+      if (r === 'CAJERO') return `<span class="badge text-bg-secondary">CAJERO</span>`;
+      return `<span class="badge text-bg-dark">${r || '—'}</span>`;
+    }
+    function badgeEstado(a){
+      return a
+        ? `<span class="badge text-bg-success">Activo</span>`
+        : `<span class="badge text-bg-warning">Inactivo</span>`;
+    }
+
+    function renderTable(list){
+      if (!list.length){
+        tb.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-muted">Sin usuarios</td></tr>`;
+        $('lblInfo').textContent = '0 resultados';
+        return;
+      }
+
+      $('lblInfo').textContent = `${list.length} resultado(s)`;
+
+      tb.innerHTML = list.map(u => {
+        const key = pickKey(u);
+        const username = pickUsername(u);
+        const nombre = pickName(u);
+        const email = pickEmail(u);
+        const rol = pickRole(u);
+        const activo = pickActive(u);
+
+        return `
+          <tr>
+            <td class="mono">${escapeHtml(username || String(key || '—'))}</td>
+            <td>${escapeHtml(nombre || '—')}</td>
+            <td>${escapeHtml(email || '—')}</td>
+            <td>${badgeRole(rol)}</td>
+            <td>${badgeEstado(activo)}</td>
+            <td class="text-end">
+              <button class="btn btn-sm btn-outline-primary me-1" data-action="edit" data-key="${escapeAttr(key)}">Editar</button>
+              <button class="btn btn-sm btn-outline-danger" data-action="del" data-key="${escapeAttr(key)}">Eliminar</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function applyFilters(){
+      const q = ($('txtBuscar').value || '').trim().toLowerCase();
+      const rol = $('selRol').value;
+      const est = $('selEstado').value;
+
+      let list = [...allUsers];
+
+      if (rol){
+        list = list.filter(u => pickRole(u) === rol);
+      }
+      if (est !== ''){
+        const want = (est === 'true');
+        list = list.filter(u => pickActive(u) === want);
+      }
+      if (q){
+        list = list.filter(u => {
+          const s = [
+            pickUsername(u),
+            pickName(u),
+            pickEmail(u),
+            pickRole(u),
+            String(pickKey(u) ?? '')
+          ].join(' ').toLowerCase();
+          return s.includes(q);
+        });
+      }
+
+      renderKpis(list);
+      renderTable(list);
+    }
+
+    function escapeHtml(s){
+      return String(s ?? '')
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'",'&#039;');
+    }
+    function escapeAttr(s){
+      return escapeHtml(s).replaceAll('"','&quot;');
+    }
+
+    // ---------- CRUD ----------
+    async function loadUsers(){
+      hideMsgs();
+      tb.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-muted">Cargando...</td></tr>`;
+
+      const base = await discoverUsersApi();
+      const data = await fetchAny(base, { method:'GET' });
+      allUsers = unwrapList(data);
+
+      renderKpis(allUsers);
+      renderTable(allUsers);
+      applyFilters();
+    }
+
+    function openCreate(){
+      $('mdlTitle').textContent = 'Nuevo usuario';
+      $('uKey').value = '';
+      $('uUsername').value = '';
+      $('uNombre').value = '';
+      $('uDni').value = '';
+      $('uEmail').value = '';
+      $('uRol').value = '';
+      $('uActivo').value = 'true';
+      $('uNotas').value = '';
+      $('uPass').value = '';
+      $('uPass2').value = '';
+      $('passHint').textContent = '(requerida)';
+
+      // password required en crear
+      $('uPass').setAttribute('required', 'required');
+      $('uPass2').setAttribute('required', 'required');
+
+      $('formUser').classList.remove('was-validated');
+      hideMsgs();
+      mdl.show();
+    }
+
+    function openEdit(user){
+      $('mdlTitle').textContent = 'Editar usuario';
+      $('uKey').value = pickKey(user) ?? '';
+      $('uUsername').value = pickUsername(user) ?? '';
+      $('uNombre').value = pickName(user) ?? '';
+      $('uDni').value = (user?.dni ?? user?.doc ?? '') || '';
+      $('uEmail').value = pickEmail(user) ?? '';
+      $('uRol').value = pickRole(user) ?? '';
+      $('uActivo').value = pickActive(user) ? 'true' : 'false';
+      $('uNotas').value = (user?.notas ?? user?.notes ?? '') || '';
+      $('uPass').value = '';
+      $('uPass2').value = '';
+      $('passHint').textContent = '(opcional)';
+
+      // password NO required en editar
+      $('uPass').removeAttribute('required');
+      $('uPass2').removeAttribute('required');
+
+      $('formUser').classList.remove('was-validated');
+      hideMsgs();
+      mdl.show();
+    }
+
+    function buildPayload(){
+      const payload = {
+        username: $('uUsername').value.trim(),
+        nombreCompleto: $('uNombre').value.trim(),
+        dni: ($('uDni').value || '').trim() || null,
+        email: ($('uEmail').value || '').trim() || null,
+        rol: $('uRol').value,
+        activo: $('uActivo').value === 'true',
+        notas: ($('uNotas').value || '').trim() || null
+      };
+
+      const p1 = $('uPass').value;
+      const p2 = $('uPass2').value;
+
+      // si se ingresó contraseña, validamos match y la mandamos
+      if (p1 || p2){
+        if (p1.length < 4) throw new Error('La contraseña debe tener mínimo 4 caracteres.');
+        if (p1 !== p2) throw new Error('Las contraseñas no coinciden.');
+        payload.password = p1;
+      }
+
+      return payload;
+    }
+
+    async function createUser(payload){
+      const base = await discoverUsersApi();
+      return fetchAny(base, { method:'POST', body: JSON.stringify(payload) });
+    }
+
+    async function updateUser(key, payload){
+      const base = await discoverUsersApi();
+      return tryWithKeys('PUT', base, key, payload);
+    }
+
+    async function deleteUser(key){
+      const base = await discoverUsersApi();
+      return tryWithKeys('DELETE', base, key);
+    }
+
+    // ---------- Export CSV ----------
+    function toCSV(rows){
+      const header = ['username','nombreCompleto','email','rol','activo'];
+      const lines = [header.join(',')];
+
+      rows.forEach(u => {
+        const row = [
+          pickUsername(u),
+          pickName(u),
+          pickEmail(u),
+          pickRole(u),
+          pickActive(u)
+        ].map(v => `"${String(v ?? '').replaceAll('"','""')}"`);
+        lines.push(row.join(','));
+      });
+
+      return lines.join('\n');
+    }
+
+    function download(name, text){
+      const blob = new Blob([text], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    // ---------- Events ----------
+    document.addEventListener('DOMContentLoaded', () => {
+      $('btnNuevo').addEventListener('click', openCreate);
+
+      $('btnExport').addEventListener('click', () => {
+        const q = ($('txtBuscar').value || '').trim().toLowerCase();
+        const rol = $('selRol').value;
+        const est = $('selEstado').value;
+
+        // exporta lo filtrado
+        let list = [...allUsers];
+        if (rol) list = list.filter(u => pickRole(u) === rol);
+        if (est !== '') list = list.filter(u => pickActive(u) === (est === 'true'));
+        if (q){
+          list = list.filter(u => ([
+            pickUsername(u), pickName(u), pickEmail(u), pickRole(u), String(pickKey(u) ?? '')
+          ].join(' ').toLowerCase()).includes(q));
+        }
+
+        download(`usuarios_${new Date().toISOString().slice(0,10)}.csv`, toCSV(list));
+      });
+
+      ['txtBuscar','selRol','selEstado'].forEach(id => {
+        $(id).addEventListener(id === 'txtBuscar' ? 'input' : 'change', applyFilters);
+      });
+
+      // acciones tabla
+      tb.addEventListener('click', async (ev) => {
+        const btn = ev.target.closest('button[data-action]');
+        if (!btn) return;
+
+        const key = btn.getAttribute('data-key');
+        const action = btn.getAttribute('data-action');
+        const user = allUsers.find(u => String(pickKey(u)) === String(key))
+                  || allUsers.find(u => String(pickUsername(u)) === String(key));
+
+        if (action === 'edit'){
+          if (!user) return;
+          openEdit(user);
+          return;
+        }
+
+        if (action === 'del'){
+          if (!confirm('¿Eliminar este usuario?')) return;
+          try{
+            hideMsgs();
+            await deleteUser(key);
+            ok('Usuario eliminado.');
+            await loadUsers();
+          }catch(e){
+            console.error(e);
+            err('No se pudo eliminar: ' + (e.message || e));
+          }
+        }
+      });
+
+      // submit modal
+      $('formUser').addEventListener('submit', async (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation();
+        hideMsgs();
+
+        const form = ev.target;
+        form.classList.add('was-validated');
+
+        if (!form.checkValidity()) return;
+
+        try{
+          const key = $('uKey').value;
+          const payload = buildPayload();
+
+          if (!payload.username) throw new Error('Usuario requerido.');
+          if (!payload.nombreCompleto) throw new Error('Nombre requerido.');
+          if (!payload.rol) throw new Error('Rol requerido.');
+
+          // en crear: password requerido sí o sí
+          if (!key){
+            if (!payload.password) throw new Error('En "Nuevo usuario" la contraseña es obligatoria.');
+            await createUser(payload);
+            ok('Usuario creado correctamente.');
+          } else {
+            await updateUser(key, payload);
+            ok('Usuario actualizado correctamente.');
+          }
+
+          mdl.hide();
+          await loadUsers();
+        }catch(e){
+          console.error(e);
+          err(e.message || String(e));
+        }
+      });
+
+      // init
+      loadUsers().catch(e => {
+        console.error(e);
+        err('Error cargando usuarios: ' + (e.message || e));
+        tb.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-muted">No se pudo cargar.</td></tr>`;
+      });
+    });
+  })();
+  </script>
+</body>
+</html>
