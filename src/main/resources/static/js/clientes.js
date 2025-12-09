@@ -2,39 +2,12 @@
 (() => {
   "use strict";
 
-  
-  // ============ Helpers ============
+  // ---------- Helpers ----------
   const $ = (s) => document.querySelector(s);
   const PEN = new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" });
   const money = (n) => PEN.format(Number(n || 0));
 
-  const docOf = (c) => String(c.doc ?? c.dni ?? c.documento ?? c.id ?? "").trim();
-  const nomOf = (c) => String(c.nombre ?? c.name ?? "").trim();
-  const telOf = (c) => String(c.telefono ?? c.phone ?? "").trim();
-  const mailOf = (c) => String(c.email ?? "").trim();
-  const comprasOf = (c) => Number(c.compras ?? 0) || 0;
-  const puntosOf = (c) => Number(c.puntos ?? 0) || 0;
-  const ultOf = (c) => c.ultimaCompra ?? c.ultima_compra ?? null;
-
-  function parseDate(d) {
-    if (!d) return null;
-    const x = new Date(d);
-    return isNaN(x.getTime()) ? null : x;
-  }
-
-  async function readErr(r) {
-    // intenta leer JSON de Spring: {message,error,...}
-    const txt = await r.text().catch(() => "");
-    if (!txt) return `${r.status} ${r.statusText || "Error"}`;
-    try {
-      const j = JSON.parse(txt);
-      return j.message || j.error || txt;
-    } catch {
-      return txt;
-    }
-  }
-
-  // ============ DOM ============
+  const modalEl = $("#modalCli");
   const tbody = $("#cliBody");
   const filtroTxt = $("#filtroTxt");
   const filtroOrden = $("#filtroOrden");
@@ -45,7 +18,6 @@
   const kpiPuntosTotales = $("#kpiPuntosTotales");
   const kpiTicketProm = $("#kpiTicketProm");
 
-  const modalEl = $("#modalCli");
   const form = $("#formCli");
   const titleCli = $("#titleCli");
   const editDoc = $("#editDoc");
@@ -55,74 +27,104 @@
   const cMail = $("#cMail");
   const cPts = $("#cPts");
 
-  // ============ Auth ============
-  // (si tu HTML ya llama Auth.requireAuth, esto igual no estorba)
-  if (window.Auth?.requireAuth) Auth.requireAuth(["ADMIN", "CAJERO"]);
+  let CLIENTES = [];
 
-  // ============ API layer ============
-  const HAS_API = !!(window.API?.clientes?.list);
+  const docOf = (c) => String(c?.doc ?? "").trim();
+  const nomOf = (c) => String(c?.nombre ?? "").trim();
+  const telOf = (c) => String(c?.telefono ?? "").trim();
+  const mailOf = (c) => String(c?.email ?? "").trim();
+  const comprasOf = (c) => Number(c?.compras ?? 0) || 0;
+  const puntosOf = (c) => Number(c?.puntos ?? 0) || 0;
 
+  function parseDate(d) {
+    if (!d) return null;
+    const x = new Date(d);
+    return isNaN(x.getTime()) ? null : x;
+  }
+
+  function getToken() {
+    // intenta varias formas (según tu auth.js)
+    return (
+      window.Auth?.getToken?.() ||
+      window.Auth?.token?.() ||
+      localStorage.getItem("token") ||
+      localStorage.getItem("jwt") ||
+      sessionStorage.getItem("token") ||
+      ""
+    );
+  }
+
+  async function readErr(r) {
+    const txt = await r.text().catch(() => "");
+    if (!txt) return `${r.status} ${r.statusText || "Error"}`;
+    try {
+      const j = JSON.parse(txt);
+      return j.message || j.error || txt;
+    } catch {
+      return txt;
+    }
+  }
+
+  async function authFetch(url, opt = {}) {
+    const token = getToken();
+    const headers = new Headers(opt.headers || {});
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+    if (!headers.has("Content-Type") && opt.body) headers.set("Content-Type", "application/json");
+    const r = await fetch(url, { ...opt, headers });
+    if (r.status === 401 || r.status === 403) {
+      alert("Tu sesión expiró o no tienes permisos. Vuelve a iniciar sesión.");
+      try { window.Auth?.logout?.(); } catch {}
+      location.href = "index.html";
+      throw new Error("UNAUTHORIZED");
+    }
+    return r;
+  }
+
+  // ---------- API ----------
   async function apiList() {
-    if (HAS_API) return await API.clientes.list();
-    const r = await fetch("/api/clientes");
+    const r = await authFetch("/api/clientes");
+    if (!r.ok) throw new Error(await readErr(r));
+    return await r.json();
+  }
+
+  async function apiKpis() {
+    const r = await authFetch("/api/clientes/kpis");
     if (!r.ok) throw new Error(await readErr(r));
     return await r.json();
   }
 
   async function apiCreate(body) {
-    if (HAS_API && API.clientes.crear) return await API.clientes.crear(body);
-    const r = await fetch("/api/clientes", {
+    const r = await authFetch("/api/clientes", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
     if (!r.ok) throw new Error(await readErr(r));
-    return r.status === 204 ? null : await r.json().catch(() => null);
+    // puede ser 201 con JSON o vacío
+    return await r.json().catch(() => null);
   }
 
   async function apiUpdate(doc, body) {
-    if (HAS_API && API.clientes.actualizar) return await API.clientes.actualizar(doc, body);
-
-    // intento PUT REST
-    let r = await fetch(`/api/clientes/${encodeURIComponent(doc)}`, {
+    const r = await authFetch(`/api/clientes/${encodeURIComponent(doc)}`, {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-
-    // fallback por si tu backend no tiene PUT (muchos profes lo hacen con POST upsert)
-    if (r.status === 404 || r.status === 405) {
-      r = await fetch("/api/clientes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-    }
-
     if (!r.ok) throw new Error(await readErr(r));
-    return r.status === 204 ? null : await r.json().catch(() => null);
+    return await r.json().catch(() => null);
   }
 
   async function apiDelete(doc) {
-    if (HAS_API && API.clientes.del) return await API.clientes.del(doc);
-    const r = await fetch(`/api/clientes/${encodeURIComponent(doc)}`, { method: "DELETE" });
+    const r = await authFetch(`/api/clientes/${encodeURIComponent(doc)}`, { method: "DELETE" });
     if (!r.ok) throw new Error(await readErr(r));
-    return r.status === 204 ? null : await r.json().catch(() => null);
+    return null;
   }
 
-  // ============ State ============
-  let CLIENTES = [];
-
-  function renderKpisLocal() {
-    const total = CLIENTES.length;
-    const conCompras = CLIENTES.filter((c) => comprasOf(c) > 0).length;
-    const puntosTot = CLIENTES.reduce((s, c) => s + puntosOf(c), 0);
-    kpiClientes.textContent = total;
-    kpiConCompras.textContent = conCompras;
-    kpiPuntosTotales.textContent = puntosTot;
-    kpiTicketProm.textContent = money(0);
+  async function apiReniec(dni) {
+    const r = await authFetch(`/api/reniec/dni/${encodeURIComponent(dni)}`);
+    if (!r.ok) throw new Error(await readErr(r));
+    return await r.json();
   }
 
+  // ---------- UI render ----------
   function renderTabla() {
     if (!tbody) return;
 
@@ -144,12 +146,16 @@
     if (ord === "nombre") data.sort((a, b) => nomOf(a).localeCompare(nomOf(b)));
     if (ord === "puntos") data.sort((a, b) => puntosOf(b) - puntosOf(a));
     if (ord === "compras") data.sort((a, b) => comprasOf(b) - comprasOf(a));
-    if (ord === "recientes") data.sort((a, b) => (parseDate(ultOf(b))?.getTime() || 0) - (parseDate(ultOf(a))?.getTime() || 0));
+    if (ord === "recientes") data.sort((a, b) => {
+      const aa = parseDate(a?.ultimaCompra)?.getTime() || 0;
+      const bb = parseDate(b?.ultimaCompra)?.getTime() || 0;
+      return bb - aa;
+    });
 
     tbody.innerHTML = "";
     for (const c of data) {
       const doc = docOf(c);
-      const ult = parseDate(ultOf(c));
+      const ult = parseDate(c?.ultimaCompra);
       const ultTxt = ult ? ult.toLocaleString("es-PE") : "—";
 
       const tr = document.createElement("tr");
@@ -173,19 +179,23 @@
     }
   }
 
-  async function refresh() {
-    try {
-      const j = await apiList();
-      CLIENTES = Array.isArray(j) ? j : (Array.isArray(j?.content) ? j.content : []);
-      renderTabla();
-      renderKpisLocal();
-    } catch (e) {
-      console.error(e);
-      alert("No se pudo cargar clientes: " + (e.message || e));
-    }
+  function renderKpisFromServer(k) {
+    kpiClientes.textContent = k?.clientes ?? CLIENTES.length;
+    kpiConCompras.textContent = k?.conCompras ?? CLIENTES.filter(x => comprasOf(x) > 0).length;
+    kpiPuntosTotales.textContent = k?.puntosTotales ?? CLIENTES.reduce((s, x) => s + puntosOf(x), 0);
+    // tu UI muestra S/ 0.00 si no calculas ticket
+    kpiTicketProm.textContent = money(k?.ticketPromHist ?? 0);
   }
 
-  // ============ Modal ============
+  // ---------- Loaders ----------
+  async function refresh() {
+    const [lista, kpis] = await Promise.all([apiList(), apiKpis().catch(() => null)]);
+    CLIENTES = Array.isArray(lista) ? lista : [];
+    renderTabla();
+    renderKpisFromServer(kpis);
+  }
+
+  // ---------- Modal ----------
   function openCli(doc) {
     form.classList.remove("was-validated");
     form.reset();
@@ -216,18 +226,39 @@
 
   async function delCli(doc) {
     if (!confirm("¿Eliminar cliente " + doc + "?")) return;
-    try {
-      await apiDelete(doc);
-      await refresh();
-    } catch (e) {
-      alert("No se pudo eliminar: " + (e.message || e));
-    }
+    await apiDelete(doc);
+    await refresh();
   }
 
   window.openCli = openCli;
   window.delCli = delCli;
 
-  form.addEventListener("submit", async (e) => {
+  // ---------- RENIEC autofill en el modal ----------
+  let reniecTimer = null;
+  cDoc?.addEventListener("input", () => {
+    if (cDoc.disabled) return; // edit mode
+    const dni = cDoc.value.trim();
+    // solo DNI de 8
+    if (!/^\d{0,8}$/.test(dni)) return;
+
+    clearTimeout(reniecTimer);
+    if (dni.length !== 8) return;
+
+    reniecTimer = setTimeout(async () => {
+      try {
+        const dto = await apiReniec(dni);
+        // dto: {nombres, apellidoPaterno, apellidoMaterno} según ReniecDto
+        const full = [dto.apellidoPaterno, dto.apellidoMaterno, dto.nombres].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+        if (full) cNom.value = full;
+      } catch (e) {
+        // no molestes: solo si quieres, puedes avisar
+        // console.warn("RENIEC:", e.message || e);
+      }
+    }, 350);
+  });
+
+  // ---------- Submit (Create/Update) ----------
+  form?.addEventListener("submit", async (e) => {
     e.preventDefault();
 
     if (!form.checkValidity()) {
@@ -238,30 +269,24 @@
     const editing = (editDoc.value || "").trim();
     const doc = cDoc.value.trim();
 
-    // Body compatible (manda doc + dni + documento por si tu backend usa otro nombre)
     const body = {
       doc,
-      dni: doc,
-      documento: doc,
       nombre: cNom.value.trim(),
       telefono: cTel.value.trim() || null,
       email: cMail.value.trim() || null,
       puntos: Number(cPts.value || 0) || 0,
-      compras: 0,
+      // opcional: no fuerces compras/ultimaCompra acá si lo maneja ventas
       activo: true,
     };
 
     try {
-      // ✅ Si estás en "Nuevo" pero ese doc YA existe => hace UPDATE (evita error por duplicado)
       if (!editing) {
+        // si ya existe, mejor actualizar (evita "duplicado")
         const exists = CLIENTES.some((c) => docOf(c) === doc);
         if (exists) {
-          const ok = confirm("Ese DNI/Doc ya existe. ¿Quieres ACTUALIZARLO en vez de crear uno nuevo?");
-          if (ok) {
-            await apiUpdate(doc, body);
-          } else {
-            return;
-          }
+          const ok = confirm("Ese DNI/Doc ya existe. ¿Quieres ACTUALIZARLO?");
+          if (!ok) return;
+          await apiUpdate(doc, body);
         } else {
           await apiCreate(body);
         }
@@ -273,16 +298,19 @@
       modal?.hide();
 
       await refresh();
-    } catch (e2) {
-      console.error(e2);
-      alert("Error al guardar cliente: " + (e2.message || e2));
+    } catch (err) {
+      alert("Error al guardar cliente: " + (err.message || err));
     }
   });
 
-  // Export CSV
+  // ---------- Export CSV ----------
   btnExport?.addEventListener("click", () => {
     const rows = [["doc","nombre","telefono","email","compras","puntos","ultimaCompra"]];
-    CLIENTES.forEach((c) => rows.push([docOf(c), nomOf(c), telOf(c), mailOf(c), comprasOf(c), puntosOf(c), ultOf(c) ?? ""]));
+    CLIENTES.forEach((c) => rows.push([
+      docOf(c), nomOf(c), telOf(c), mailOf(c),
+      comprasOf(c), puntosOf(c),
+      c?.ultimaCompra ?? ""
+    ]));
     const csv = rows.map(r => r.map(x => `"${String(x ?? "").replace(/"/g,'""')}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const a = document.createElement("a");
@@ -294,5 +322,10 @@
   filtroTxt?.addEventListener("input", renderTabla);
   filtroOrden?.addEventListener("change", renderTabla);
 
-  document.addEventListener("DOMContentLoaded", refresh);
+  document.addEventListener("DOMContentLoaded", () => {
+    refresh().catch((e) => {
+      // si falla por sesion, authFetch ya redirige
+      console.error(e);
+    });
+  });
 })();

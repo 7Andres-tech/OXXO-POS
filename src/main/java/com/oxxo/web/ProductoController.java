@@ -37,15 +37,16 @@ public class ProductoController {
     }
 
     @PutMapping("/{sku}/activo")
-    public void actualizarEstado(@PathVariable String sku,
-                                 @RequestBody Map<String, Boolean> body) {
-        boolean activo = Boolean.TRUE.equals(body.get("activo"));
-        service.actualizarEstado(sku, activo);
-    }
+public void actualizarEstado(@PathVariable String sku,
+                             @RequestBody Map<String, Boolean> body) {
+    boolean activo = body.getOrDefault("activo", true);
+    service.actualizarEstado(sku, activo);
+}
 
-    @DeleteMapping("/{sku}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)   // <-- IMPORTANTE: 204, sin cuerpo
-    public void eliminar(@PathVariable String sku) {
-        service.eliminar(sku);
-    }
+@DeleteMapping("/{sku}")
+@ResponseStatus(HttpStatus.NO_CONTENT)
+public void eliminar(@PathVariable String sku) {
+    service.eliminar(sku);
+}
+
 }

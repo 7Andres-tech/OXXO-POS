@@ -1,86 +1,90 @@
 package com.oxxo.config;
 
-import com.oxxo.domain.Role;
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
-import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import javax.crypto.SecretKey;
-import java.time.Instant;
+import java.security.Key;
 import java.util.Date;
-import java.util.Map;
 
 @Service
 public class JwtTokenService {
 
-    @Value("${app.jwt.secret}")
-    private String secretB64;
+    private final Key key;
 
-    @Value("${app.jwt.adminExpMinutes:1440}")
-    private long adminExpMinutes;
+    private final long adminExpMillis;
+    private final long cajeroExpMillis;
+    private final long defaultExpMillis;
 
-    @Value("${app.jwt.cajeroExpMinutes:600}")
-    private long cajeroExpMinutes;
+    public JwtTokenService(
+            @Value("${app.jwt.secret}") String secret,
+            @Value("${app.jwt.adminExpMinutes:1440}") long adminExpMinutes,
+            @Value("${app.jwt.cajeroExpMinutes:600}") long cajeroExpMinutes,
+            @Value("${app.jwt.defaultExpMinutes:480}") long defaultExpMinutes
+    ) {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalArgumentException("Falta app.jwt.secret en application.properties");
+        }
 
-    @Value("${app.jwt.defaultExpMinutes:480}")
-    private long defaultExpMinutes;
+        // app.jwt.secret está en base64
+        this.key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(secret.trim()));
 
-    private SecretKey key;
-
-    @PostConstruct
-    void init() {
-        byte[] bytes = Decoders.BASE64.decode(secretB64);
-        this.key = Keys.hmacShaKeyFor(bytes);
+        this.adminExpMillis = adminExpMinutes * 60_000L;
+        this.cajeroExpMillis = cajeroExpMinutes * 60_000L;
+        this.defaultExpMillis = defaultExpMinutes * 60_000L;
     }
 
-    public String generateToken(String email, Role rol) {
-        long expMinutes = expMinutesFor(rol);
+    // ✅ ESTE es el método que tu login está intentando usar
+    public String generarToken(UserDetails userDetails) {
+        String subject = userDetails.getUsername(); // en tu proyecto suele ser el email
+        String role = extractRole(userDetails);     // ADMIN / CAJERO / etc.
 
-        Instant now = Instant.now();
-        Date iat = Date.from(now);
-        Date exp = Date.from(now.plusSeconds(expMinutes * 60));
+        long ttl = switch (role) {
+            case "ADMIN" -> adminExpMillis;
+            case "CAJERO" -> cajeroExpMillis;
+            default -> defaultExpMillis;
+        };
 
-        Map<String, Object> claims = Map.of(
-                "role", rol != null ? rol.name() : null,
-                "rol",  rol != null ? rol.name() : null // por compat si en algún lado lees "rol"
-        );
+        Date now = new Date();
+        Date exp = new Date(now.getTime() + ttl);
 
         return Jwts.builder()
-                .setSubject(email == null ? null : email.trim().toLowerCase())
-                .setIssuedAt(iat)
+                .setSubject(subject)
+                .setIssuedAt(now)
                 .setExpiration(exp)
-                .addClaims(claims)
+                .claim("role", role)     // lo lee tu filtro
+                .claim("rol", role)      // por si tu frontend usa "rol"
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
+    public String getSubject(String token) {
+        return getClaims(token).getSubject();
+    }
+
+    public String getRole(String token) {
+        Claims c = getClaims(token);
+        String r = c.get("role", String.class);
+        if (r == null || r.isBlank()) r = c.get("rol", String.class);
+        return r;
+    }
+
     public boolean isValid(String token) {
         try {
-            parseClaims(token);
-            return true;
-        } catch (JwtException | IllegalArgumentException e) {
+            Claims c = getClaims(token);
+            return c.getExpiration() != null && c.getExpiration().after(new Date());
+        } catch (Exception e) {
             return false;
         }
     }
 
-    public String getSubject(String token) {
-        return parseClaims(token).getSubject();
-    }
-
-    public String getRole(String token) {
-        Claims c = parseClaims(token);
-        Object r = c.get("role");
-        if (r == null) r = c.get("rol");
-        return r == null ? null : String.valueOf(r);
-    }
-
-    private Claims parseClaims(String token) {
+    private Claims getClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
@@ -88,12 +92,16 @@ public class JwtTokenService {
                 .getBody();
     }
 
-    private long expMinutesFor(Role role) {
-        if (role == null) return defaultExpMinutes;
-        return switch (role) {
-            case ADMIN -> adminExpMinutes;
-            case CAJERO -> cajeroExpMinutes;
-            default -> defaultExpMinutes;
-        };
+    private String extractRole(UserDetails userDetails) {
+        // En Spring Security normalmente viene ROLE_ADMIN, ROLE_CAJERO, etc.
+        for (GrantedAuthority a : userDetails.getAuthorities()) {
+            if (a == null) continue;
+            String s = a.getAuthority();
+            if (s == null) continue;
+            s = s.trim().toUpperCase();
+            if (s.startsWith("ROLE_")) s = s.substring(5);
+            if (!s.isBlank()) return s;
+        }
+        return "DEFAULT";
     }
 }

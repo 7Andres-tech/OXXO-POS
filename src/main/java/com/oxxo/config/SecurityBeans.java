@@ -16,25 +16,21 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityBeans {
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
+SecurityFilterChain filterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
+    http
+        .csrf(csrf -> csrf.disable())
+        .authorizeHttpRequests(auth -> auth
+            .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
+            .requestMatchers("/css/**", "/js/**", "/img/**", "/images/**", "/assets/**", "/favicon.ico").permitAll()
+            .requestMatchers("/", "/index.html", "/*.html", "/error").permitAll()
 
-        http
-            .csrf(csrf -> csrf.disable())
-            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .exceptionHandling(eh -> eh.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
-                .requestMatchers("/css/**", "/js/**", "/img/**", "/images/**", "/assets/**", "/favicon.ico").permitAll()
-                .requestMatchers("/", "/index.html", "/*.html", "/error").permitAll()
-                .requestMatchers("/api/auth/**").permitAll()
+            .requestMatchers("/api/**").permitAll()   // <--- TODO: solo para DESARROLLO
 
-                // ajusta si quieres roles específicos para usuarios:
-                .requestMatchers("/api/usuarios/**").authenticated()
+            .anyRequest().permitAll()                 // nada requiere login por ahora
+        )
+        .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
-                .anyRequest().authenticated()
-            )
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+    return http.build();
+}
 
-        return http.build();
-    }
 }

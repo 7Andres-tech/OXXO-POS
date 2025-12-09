@@ -16,48 +16,48 @@
     );
   </script>
 
-<!-- NAVBAR -->
-<nav class="navbar navbar-expand-lg navbar-dark sticky-top">
-  <div class="container-fluid">
-    <a class="navbar-brand d-flex align-items-center" href="inicio.html" aria-label="Ir al inicio">
-      <img src="/img/OXXO-Logo.wine.png" class="brand-logo" alt="OXXO" width="76">
-    </a>
+  <!-- NAVBAR -->
+  <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+    <div class="container-fluid">
+      <a class="navbar-brand d-flex align-items-center" href="inicio.html" aria-label="Ir al inicio">
+        <img src="/img/OXXO-Logo.wine.png" class="brand-logo" alt="OXXO" width="76">
+      </a>
 
-    <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
+      <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
 
-    <div id="nav" class="collapse navbar-collapse">
-      <ul class="navbar-nav me-auto">
-        <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="inicio.html">Inicio</a></li>
-        <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="venta.html">Ventas</a></li>
-        <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="clientes.html">Clientes frecuentes</a></li>
+      <div id="nav" class="collapse navbar-collapse">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="inicio.html">Inicio</a></li>
+          <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="venta.html">Ventas</a></li>
+          <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="clientes.html">Clientes frecuentes</a></li>
 
-        <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="inventario.html">Inventario</a></li>
-        <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="productos.html">Productos</a></li>
-        <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="proveedores.html">Proveedores</a></li>
+          <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="inventario.html">Inventario</a></li>
+          <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="productos.html">Productos</a></li>
+          <li class="nav-item" data-roles="ADMIN"><a class="nav-link" href="proveedores.html">Proveedores</a></li>
 
-        <li class="nav-item dropdown" data-roles="ADMIN">
-          <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#">Reportes</a>
-          <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="reportes.html#ventas">R. Ventas</a></li>
-            <li><a class="dropdown-item" href="reportes.html#clientes">R. Clientes</a></li>
-            <li><a class="dropdown-item" href="reportes.html#productos">R. Productos</a></li>
-          </ul>
-        </li>
+          <li class="nav-item dropdown" data-roles="ADMIN">
+            <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#">Reportes</a>
+            <ul class="dropdown-menu">
+              <li><a class="dropdown-item" href="reportes.html#ventas">R. Ventas</a></li>
+              <li><a class="dropdown-item" href="reportes.html#clientes">R. Clientes</a></li>
+              <li><a class="dropdown-item" href="reportes.html#productos">R. Productos</a></li>
+            </ul>
+          </li>
 
-        <li class="nav-item" data-roles="ADMIN"><a class="nav-link active" href="usuarios.html">G. Usuarios</a></li>
-        <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="cierre.html">Cierre de caja</a></li>
-      </ul>
+          <li class="nav-item" data-roles="ADMIN"><a class="nav-link active" href="usuarios.html">G. Usuarios</a></li>
+          <li class="nav-item" data-roles="ADMIN,CAJERO"><a class="nav-link" href="cierre.html">Cierre de caja</a></li>
+        </ul>
 
-      <div class="d-flex align-items-center gap-2">
-        <span class="navbar-text small">Hola, <strong id="navUserName">—</strong></span>
-        <a class="btn btn-outline-light btn-sm" href="cierre.html" data-roles="ADMIN,CAJERO">Cerrar turno</a>
-        <button class="btn btn-outline-light btn-sm" type="button" onclick="Auth.logout()">Salir</button>
+        <div class="d-flex align-items-center gap-2">
+          <span class="navbar-text small">Hola, <strong id="navUserName">—</strong></span>
+          <a class="btn btn-outline-light btn-sm" href="cierre.html" data-roles="ADMIN,CAJERO">Cerrar turno</a>
+          <button class="btn btn-outline-light btn-sm" type="button" onclick="Auth.logout()">Salir</button>
+        </div>
       </div>
     </div>
-  </div>
-</nav>
+  </nav>
 
   <!-- CONTENT -->
   <main class="container-fluid with-sidebar">
@@ -80,7 +80,10 @@
                 <label class="form-label">Cliente (DNI / nombre)</label>
                 <div class="autocomplete-wrap">
                   <input id="cliInput" class="form-control"
-                         placeholder="Mostrador (sin cliente)" autocomplete="off">
+       placeholder="DNI del cliente"
+       autocomplete="off"
+       inputmode="numeric"
+       maxlength="8">
                   <div id="cliList" class="list-group d-none"
                        role="listbox" aria-label="Clientes"></div>
                 </div>
@@ -95,7 +98,7 @@
               </div>
             </div>
 
-            <form id="formScan" class="row g-2"> 
+            <form id="formScan" class="row g-2">
               <div class="col-12 col-md-7">
                 <label class="form-label">SKU / Código de barras / Nombre</label>
                 <div class="autocomplete-wrap">
@@ -155,7 +158,6 @@
                 Cobrar
               </button>
               <button class="btn btn-outline-secondary" id="btnVaciar" disabled>Vaciar carrito</button>
-             
             </div>
           </div>
         </div>
@@ -241,7 +243,24 @@
     </div></div>
   </div>
 
- 
+  <!-- MODAL CLIENTE RÁPIDO -->
+  <div class="modal fade" id="modalCliRapido" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title">Crear cliente rápido</h5>
+          <button class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p id="mcrTexto" class="mb-0"></p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancelar</button>
+          <button class="btn btn-primary btn-sm" id="mcrAceptar">Aceptar</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
   <script src="/js/auth.js" defer></script>
@@ -259,6 +278,73 @@
         : {};
       return { 'Content-Type': 'application/json', ...h };
     }
+
+    /* ================================
+   Modales (confirmación / aviso)
+==================================*/
+function showConfirmModal(message, onAccept) {
+  const modalEl  = document.getElementById('modalCliRapido');
+  const txt      = document.getElementById('mcrTexto');
+  const btnOk    = document.getElementById('mcrAceptar');
+  const headerEl = modalEl?.querySelector('.modal-header');
+  const titleEl  = modalEl?.querySelector('.modal-title');
+
+  if (!modalEl || !txt || !btnOk || typeof bootstrap === 'undefined') {
+    if (confirm(message) && typeof onAccept === 'function') onAccept();
+    return;
+  }
+
+  // estilo “confirmación”
+  headerEl.classList.remove('bg-danger');
+  headerEl.classList.add('bg-primary');
+  titleEl.textContent = 'Crear cliente rápido';
+
+  txt.textContent = message;
+
+  // limpiar handlers anteriores
+  const newBtn = btnOk.cloneNode(true);
+  btnOk.parentNode.replaceChild(newBtn, btnOk);
+
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+
+  newBtn.addEventListener('click', async () => {
+    modal.hide();
+    if (typeof onAccept === 'function') await onAccept();
+  });
+
+  modal.show();
+}
+
+// Solo muestra un aviso (OK) usando el mismo modal
+function showAlertModal(message) {
+  const modalEl  = document.getElementById('modalCliRapido');
+  const txt      = document.getElementById('mcrTexto');
+  const btnOk    = document.getElementById('mcrAceptar');
+  const headerEl = modalEl?.querySelector('.modal-header');
+  const titleEl  = modalEl?.querySelector('.modal-title');
+
+  if (!modalEl || !txt || !btnOk || typeof bootstrap === 'undefined') {
+    alert(message);
+    return;
+  }
+
+  // estilo “error / aviso”
+  headerEl.classList.remove('bg-primary');
+  headerEl.classList.add('bg-danger');
+  titleEl.textContent = 'Aviso';
+
+  txt.textContent = message;
+
+  // botón solo cierra
+  const newBtn = btnOk.cloneNode(true);
+  btnOk.parentNode.replaceChild(newBtn, btnOk);
+
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  newBtn.addEventListener('click', () => modal.hide());
+
+  modal.show();
+}
+
 
     /* ================================
        Utils comunes (PEN, DOM, fechas)
@@ -354,7 +440,6 @@
         proveedor: o?.proveedor ?? o?.vendor ?? '—',
         precio:    Number(o?.precio ?? o?.price ?? 0),
         costo:     Number(o?.costo  ?? o?.cost  ?? 0),
-        // acá ya traemos si está activo/inactivo desde el backend
         activo:    ('activo' in (o || {})) ? !!o.activo : true
       })).filter(x => x.sku && x.nombre);
     }
@@ -366,7 +451,6 @@
           if (Array.isArray(v) && v.length) return normalizeCatalog(v);
         } catch {}
       }
-      // exploración libre
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
         try {
@@ -389,18 +473,16 @@
     let CAJERO = localStorage.getItem('cajeroNombre') || 'Cajero 01';
 
     let CLIENTES = [];
-let CLIENTE_ACTUAL = { doc: null, nombre: 'Mostrador' };
+    let CLIENTE_ACTUAL = { doc: null, nombre: 'Mostrador' };
 
     /* ================================
        Inicio
     ==================================*/
     document.addEventListener('DOMContentLoaded', async () => {
-      // Marca cajero
       $('#lblCajero').textContent = CAJERO;
 
       await resolveAll();
 
-      // Catálogo / inventario desde API con fallback a LS
       try { catalogo = normalizeCatalog(await getArray(Endpoints.productos)); }
       catch { catalogo = loadCatalogLS(); }
 
@@ -414,15 +496,13 @@ let CLIENTE_ACTUAL = { doc: null, nombre: 'Mostrador' };
       ticketId    = nextTicketId();
       $('#lblTicket').textContent = ticketId;
 
-      // NUEVO: cargar clientes y preparar autocomplete
-  await loadClientesPOS();
-  setupClienteAutocomplete();
+      await loadClientesPOS();
+      setupClienteAutocomplete();
 
       syncInventoryToCatalog();
       renderCart();
       renderTicketsRecientes();
 
-      // Listeners UI
       $('#formScan').addEventListener('submit', submitScan);
       $('#btnVaciar').addEventListener('click', vaciarCarrito);
       $('#pagoMedio').addEventListener('change', calcVuelto);
@@ -430,10 +510,6 @@ let CLIENTE_ACTUAL = { doc: null, nombre: 'Mostrador' };
       $('#formPago').addEventListener('submit', cobrar);
       $('#btnPrint').addEventListener('click', imprimirTicket);
 
-      
-      
-
-      // Autocomplete
       setupAutocomplete();
     });
 
@@ -468,39 +544,37 @@ let CLIENTE_ACTUAL = { doc: null, nombre: 'Mostrador' };
     }
 
     /* ================================
-   Cliente actual (POS)
-==================================*/
-function renderClienteActual() {
-  const span = document.getElementById('lblCliente');
-  if (!span) return;
-  if (!CLIENTE_ACTUAL.doc) {
-    span.textContent = 'Mostrador';
-  } else {
-    span.textContent = `${CLIENTE_ACTUAL.nombre} (${CLIENTE_ACTUAL.doc})`;
-  }
-}
+       Cliente actual (POS)
+    ==================================*/
+    function renderClienteActual() {
+      const span = document.getElementById('lblCliente');
+      if (!span) return;
+      if (!CLIENTE_ACTUAL.doc) {
+        span.textContent = 'Mostrador';
+      } else {
+        span.textContent = `${CLIENTE_ACTUAL.nombre} (${CLIENTE_ACTUAL.doc})`;
+      }
+    }
 
-async function loadClientesPOS() {
-  try {
-    const r = await fetch('/api/clientes', { headers: authHeadersJson() });
-    if (!r.ok) throw new Error('Error clientes');
-    CLIENTES = await r.json();
-  } catch (err) {
-    console.warn('No se pudieron cargar clientes:', err);
-    CLIENTES = [];
-  }
-  renderClienteActual();
-}
-
+    async function loadClientesPOS() {
+      try {
+        const r = await fetch('/api/clientes', { headers: authHeadersJson() });
+        if (!r.ok) throw new Error('Error clientes');
+        CLIENTES = await r.json();
+      } catch (err) {
+        console.warn('No se pudieron cargar clientes:', err);
+        CLIENTES = [];
+      }
+      renderClienteActual();
+    }
 
     /* ================================
-       Autocomplete & búsqueda
+       Autocomplete & búsqueda productos
     ==================================*/
     const inCode = $('#inCode');
     const autoList = $('#autoList');
     let autoIndex = -1;
 
-    // hacemos que la lista tenga scroll
     if (autoList) {
       autoList.style.maxHeight = '220px';
       autoList.style.overflowY = 'auto';
@@ -512,18 +586,14 @@ async function loadClientesPOS() {
       return s.split(/[;,]/)[0].trim();
     }
 
-    // Ahora:
-    // - si hay texto -> filtra
-    // - si está vacío -> devuelve TODO el catálogo (para mostrar al hacer click)
     function getMatches(q) {
       const s = (q || '').toLowerCase().trim();
 
-      // sin texto: todos los productos, ordenados por nombre
       if (!s) {
         return catalogo
           .slice()
           .sort((a,b) => (a.nombre || '').localeCompare(b.nombre || ''))
-          .slice(0, 40); // límite por si hay muchos
+          .slice(0, 40);
       }
 
       const by = [
@@ -548,7 +618,7 @@ async function loadClientesPOS() {
 
     function hl(text, q) {
       if (!text) return '';
-      if (!q) return text; // sin highlight si no hay query
+      if (!q) return text;
       const i = text.toLowerCase().indexOf(q.toLowerCase());
       return i < 0
         ? text
@@ -608,10 +678,9 @@ async function loadClientesPOS() {
       }
     }
 
-    // Al elegir un item desde la lista
     function chooseItem(sku) {
       const qty = $('#inQty').value || 1;
-      addToCart(sku, qty);   // addToCart ahora valida si está activo
+      addToCart(sku, qty);
       inCode.value = '';
       hideAuto();
       inCode.focus();
@@ -620,15 +689,13 @@ async function loadClientesPOS() {
     function setupAutocomplete() {
       if (!inCode || !autoList) return;
 
-      // Al escribir: siempre renderizamos (si está vacío, muestra todo)
       inCode.addEventListener('input', () => {
         const q = inCode.value;
         renderAutoList(q);
       });
 
-      // NUEVO: al hacer foco, mostrar todos los productos
       inCode.addEventListener('focus', () => {
-        renderAutoList(inCode.value); // si está vacío, getMatches devuelve todos
+        renderAutoList(inCode.value);
       });
 
       inCode.addEventListener('keydown', e => {
@@ -661,126 +728,170 @@ async function loadClientesPOS() {
     }
 
     /* ================================
-   Autocomplete CLIENTES (POS)
-==================================*/
-const cliInput = document.getElementById('cliInput');
-const cliList  = document.getElementById('cliList');
-let cliIndex   = -1;
+       Autocomplete CLIENTES (POS)
+    ==================================*/
+    const cliInput = document.getElementById('cliInput');
+    const cliList  = document.getElementById('cliList');
+    let cliIndex   = -1;
 
-if (cliList) {
-  cliList.style.maxHeight = '220px';
-  cliList.style.overflowY = 'auto';
-}
+    if (cliList) {
+      cliList.style.maxHeight = '220px';
+      cliList.style.overflowY = 'auto';
+    }
 
-function matchClientes(q) {
-  const s = (q || '').toLowerCase().trim();
-  if (!s) return CLIENTES.slice(0, 30);
-  return CLIENTES
-    .filter(c =>
-      (c.doc || '').toLowerCase().includes(s) ||
-      (c.nombre || '').toLowerCase().includes(s)
-    )
-    .slice(0, 30);
-}
+    function matchClientes(q) {
+      const s = (q || '').toLowerCase().trim();
+      if (!s) return CLIENTES.slice(0, 30);
+      return CLIENTES
+        .filter(c =>
+          (c.doc || '').toLowerCase().includes(s) ||
+          (c.nombre || '').toLowerCase().includes(s)
+        )
+        .slice(0, 30);
+    }
 
-function renderCliList(q) {
-  if (!cliList) return;
-  const m = matchClientes(q);
-  cliList.innerHTML = '';
-  cliIndex = -1;
-  if (!m.length) {
-    cliList.classList.add('d-none');
+    function renderCliList(q) {
+      if (!cliList) return;
+      const m = matchClientes(q);
+      cliList.innerHTML = '';
+      cliIndex = -1;
+      if (!m.length) {
+        cliList.classList.add('d-none');
+        return;
+      }
+      m.forEach(c => {
+        cliList.insertAdjacentHTML('beforeend', `
+          <div class="list-group-item list-group-item-action"
+               data-doc="${c.doc || ''}"
+               data-nom="${c.nombre || ''}">
+            <div class="fw-semibold">${c.nombre || 'Cliente sin nombre'}</div>
+            <div class="small-muted">
+              DNI: ${c.doc || '—'}
+              · Compras: ${c.compras ?? 0}
+              · Puntos: ${c.puntos ?? 0}
+            </div>
+          </div>
+        `);
+      });
+      cliList.classList.remove('d-none');
+    }
+
+    function hideCliList() {
+      if (!cliList) return;
+      cliList.classList.add('d-none');
+      cliIndex = -1;
+    }
+
+    function selectCliIndex(i) {
+      const it = cliList.querySelectorAll('.list-group-item');
+      it.forEach(n => n.classList.remove('active'));
+      if (i >= 0 && i < it.length) {
+        it[i].classList.add('active');
+        it[i].scrollIntoView({ block: 'nearest' });
+        cliIndex = i;
+      }
+    }
+
+    function elegirCliente(doc, nom) {
+      CLIENTE_ACTUAL = { doc: doc || null, nombre: nom || 'Mostrador' };
+      renderClienteActual();
+      if (cliInput) cliInput.value = '';
+      hideCliList();
+    }
+
+    async function crearClienteRapido(descriptor) {
+  const dni = (descriptor || '').trim();
+
+  // Debe ser DNI numérico de 8 dígitos
+  if (!/^\d{8}$/.test(dni)) {
+    showAlertModal('Ingresa un DNI válido de 8 dígitos.');
     return;
   }
-  m.forEach(c => {
-    cliList.insertAdjacentHTML('beforeend', `
-      <div class="list-group-item list-group-item-action"
-           data-doc="${c.doc || ''}"
-           data-nom="${c.nombre || ''}">
-        <div class="fw-semibold">${c.nombre || 'Cliente sin nombre'}</div>
-        <div class="small-muted">
-          DNI: ${c.doc || '—'}
-          · Compras: ${c.compras ?? 0}
-          · Puntos: ${c.puntos ?? 0}
-        </div>
-      </div>
-    `);
-  });
-  cliList.classList.remove('d-none');
-}
 
-function hideCliList() {
-  if (!cliList) return;
-  cliList.classList.add('d-none');
-  cliIndex = -1;
-}
-
-function selectCliIndex(i) {
-  const it = cliList.querySelectorAll('.list-group-item');
-  it.forEach(n => n.classList.remove('active'));
-  if (i >= 0 && i < it.length) {
-    it[i].classList.add('active');
-    it[i].scrollIntoView({ block: 'nearest' });
-    cliIndex = i;
-  }
-}
-
-function elegirCliente(doc, nom) {
-  CLIENTE_ACTUAL = { doc: doc || null, nombre: nom || 'Mostrador' };
-  renderClienteActual();
-  if (cliInput) cliInput.value = '';
-  hideCliList();
-}
-
-async function crearClienteRapido(descriptor) {
-  const txt = (descriptor || '').trim();
-  if (!txt) return;
-  const partes = txt.split(/\s+/);
-  const doc = partes[0];
-  const nombre = partes.slice(1).join(' ') || 'Cliente sin nombre';
-  if (!doc) {
-    alert('Escribe al menos el DNI.');
-    return;
-  }
-
-   // NUEVO: si ya existe, solo lo seleccionamos y no creamos nada
-   const existente = CLIENTES.find(c => (c.doc || '') === doc);
+  // Si ya existe -> seleccionarlo
+  const existente = CLIENTES.find(c => (c.doc || '') === dni);
   if (existente) {
     elegirCliente(existente.doc, existente.nombre);
     return;
   }
 
-  if (!confirm(`Crear cliente rápido?\nDNI: ${doc}\nNombre: ${nombre}`)) return;
-
+  // Consultar RENIEC
+  let nombreReniec = null;
   try {
-    const r = await fetch('/api/clientes', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeadersJson() },
-      body: JSON.stringify({
-        doc,
-        nombre,
-        telefono: null,
-        email: null,
-        puntos: 0
-      })
+    const r = await fetch(`/api/reniec/dni/${encodeURIComponent(dni)}`, {
+      headers: authHeadersJson()
     });
-    if (!r.ok) {
-      const txt = await r.text().catch(() => '');
-      throw new Error(txt || r.statusText);
+
+    if (r.status === 404) {
+      showAlertModal('DNI no encontrado en RENIEC. No se creó el cliente.');
+      return;
     }
-    const cli = await r.json();
-    CLIENTES.push(cli);
-    elegirCliente(cli.doc, cli.nombre);
-  } catch (err) {
-    alert('No se pudo crear el cliente: ' + (err.message || err));
+    if (!r.ok) {
+      throw new Error('Error consultando RENIEC');
+    }
+
+    const dto = await r.json();
+    nombreReniec =
+      dto.nombreCompleto ||
+      [dto.apellidoPaterno, dto.apellidoMaterno, dto.nombres]
+        .filter(Boolean)
+        .join(' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+  } catch (e) {
+    console.warn('RENIEC (cliente rápido):', e);
+    showAlertModal('No se pudo consultar RENIEC. Intenta nuevamente.');
+    return;
   }
+
+  const nombre = nombreReniec || 'Cliente sin nombre';
+
+  // Confirmar creación con modal bonito
+  showConfirmModal(`DNI: ${dni}\nNombre: ${nombre}`, async () => {
+    try {
+      const r = await fetch('/api/clientes', {
+        method: 'POST',
+        headers: authHeadersJson(),
+        body: JSON.stringify({
+          doc: dni,
+          nombre,
+          telefono: null,
+          email: null,
+          puntos: 0
+        })
+      });
+
+      if (!r.ok) {
+        const txt = await r.text().catch(() => '');
+        throw new Error(txt || r.statusText);
+      }
+
+      const cli = await r.json();
+      CLIENTES.push(cli);
+      elegirCliente(cli.doc, cli.nombre);
+    } catch (err) {
+      showAlertModal('No se pudo crear el cliente: ' + (err.message || err));
+    }
+  });
 }
 
-function setupClienteAutocomplete() {
+    function setupClienteAutocomplete() {
   if (!cliInput || !cliList) return;
 
+  // SOLO NÚMEROS, MÁXIMO 8
   cliInput.addEventListener('input', () => {
-    renderCliList(cliInput.value);
+    let v = cliInput.value || '';
+
+    // quita todo lo que no sea dígito
+    v = v.replace(/\D/g, '');
+
+    // corta a 8 dígitos
+    if (v.length > 8) v = v.slice(0, 8);
+
+    cliInput.value = v;
+
+    renderCliList(v);
   });
 
   cliInput.addEventListener('focus', () => {
@@ -788,66 +899,57 @@ function setupClienteAutocomplete() {
   });
 
   cliInput.addEventListener('keydown', e => {
-  const q = (cliInput.value || '').trim().toLowerCase();
+    const q = (cliInput.value || '').trim().toLowerCase();
 
-  // Si no hay lista visible
-  if (cliList.classList.contains('d-none')) {
-    if (e.key === 'Enter') {
+    if (cliList.classList.contains('d-none')) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+
+        // buscar cliente exacto por DNI
+        const exact = CLIENTES.find(c =>
+          (c.doc || '').toLowerCase() === q
+        );
+        if (exact) {
+          elegirCliente(exact.doc, exact.nombre);
+          return;
+        }
+
+        // si no existe -> cliente rápido (validación de 8 dígitos ya está en crearClienteRapido)
+        crearClienteRapido(cliInput.value);
+      }
+      return;
+    }
+
+    const it = cliList.querySelectorAll('.list-group-item');
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      selectCliIndex(Math.min(cliIndex + 1, it.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      selectCliIndex(Math.max(cliIndex - 1, 0));
+    } else if (e.key === 'Enter') {
       e.preventDefault();
 
-      // 1) Si ya existe cliente exacto (DNI o nombre) → seleccionarlo
-      const exact = CLIENTES.find(c =>
-        (c.doc || '').toLowerCase() === q ||
-        (c.nombre || '').toLowerCase() === q
-      );
-      if (exact) {
-        elegirCliente(exact.doc, exact.nombre);
+      if (cliIndex >= 0) {
+        const item = it[cliIndex];
+        elegirCliente(item.dataset.doc, item.dataset.nom);
         return;
       }
 
-      // 2) Si no existe → crear rápido
+      if (it.length === 1) {
+        const item = it[0];
+        elegirCliente(item.dataset.doc, item.dataset.nom);
+        return;
+      }
+
+      if (it.length > 1) return;
+
       crearClienteRapido(cliInput.value);
+    } else if (e.key === 'Escape') {
+      hideCliList();
     }
-    return;
-  }
-
-  const it = cliList.querySelectorAll('.list-group-item');
-
-  if (e.key === 'ArrowDown') {
-    e.preventDefault();
-    selectCliIndex(Math.min(cliIndex + 1, it.length - 1));
-  } else if (e.key === 'ArrowUp') {
-    e.preventDefault();
-    selectCliIndex(Math.max(cliIndex - 1, 0));
-  } else if (e.key === 'Enter') {
-    e.preventDefault();
-
-    // Si el usuario ya bajó con ↑/↓, usa ese
-    if (cliIndex >= 0) {
-      const item = it[cliIndex];
-      elegirCliente(item.dataset.doc, item.dataset.nom);
-      return;
-    }
-
-    // Si no hay selección pero hay SOLO un resultado → usarlo
-    if (it.length === 1) {
-      const item = it[0];
-      elegirCliente(item.dataset.doc, item.dataset.nom);
-      return;
-    }
-
-    // Si hay varios resultados y no eligió ninguno → no crear, que elija
-    if (it.length > 1) {
-      return;
-    }
-
-    // Si no hay resultados en la lista → crear rápido
-    crearClienteRapido(cliInput.value);
-  } else if (e.key === 'Escape') {
-    hideCliList();
-  }
-});
-
+  });
 
   cliList.addEventListener('mousedown', e => {
     const row = e.target.closest('.list-group-item');
@@ -855,11 +957,7 @@ function setupClienteAutocomplete() {
       elegirCliente(row.dataset.doc, row.dataset.nom);
     }
   });
-
-  // El listener global que ya tienes para productos
-  // también cerrará esta lista porque comparte la clase .autocomplete-wrap
 }
-
 
     /* ================================
        Carrito
@@ -879,7 +977,6 @@ function setupClienteAutocomplete() {
       const p = lookupProduct(String(codeOrSku));
       if (!p) return alert('Producto no encontrado en Catálogo. Ve a Productos y guárdalo.');
 
-      // *** aquí bloqueamos productos inactivos ***
       if (!p.activo) {
         alert('Este producto está INACTIVO y no se puede vender.');
         return;
@@ -935,7 +1032,7 @@ function setupClienteAutocomplete() {
     function renderTotals() {
       const items = carrito.reduce((a, b) => a + b.qty, 0);
       const sub   = carrito.reduce((a, b) => a + b.precio * b.qty, 0);
-      const TAX_RATE = 0; // si quieres IGV, cámbialo aquí
+      const TAX_RATE = 0;
       const tax   = sub * TAX_RATE;
       const total = sub + tax;
 
@@ -954,7 +1051,7 @@ function setupClienteAutocomplete() {
       const val = inCode.value;
       const qty = $('#inQty').value;
       if (!val.trim()) return inCode.focus();
-      addToCart(val, qty);  // aquí también aplica el bloqueo por inactivo
+      addToCart(val, qty);
       inCode.value = '';
       $('#inQty').value = 1;
       hideAuto();
@@ -970,26 +1067,24 @@ function setupClienteAutocomplete() {
     }
 
     function calcVuelto() {
-  const medio     = $('#pagoMedio').value;
-  const inpRec    = $('#pagoRec');
-  const inpVuelto = $('#pagoVuelto');
-  const total     = parseNum($('#totAll').textContent.replace(/[^\d.]/g, ''));
+      const medio     = $('#pagoMedio').value;
+      const inpRec    = $('#pagoRec');
+      const inpVuelto = $('#pagoVuelto');
+      const total     = parseNum($('#totAll').textContent.replace(/[^\d.]/g, ''));
 
-  if (medio === 'Efectivo') {
-    // Solo en efectivo se ingresa monto recibido y se calcula vuelto
-    inpRec.disabled    = false;
-    inpRec.placeholder = 'Ingrese monto recibido';
-    const recibido = parseNum(inpRec.value);
-    const vuelto   = Math.max(0, recibido - total);
-    inpVuelto.value = money(vuelto);
-  } else {
-    // Tarjeta / Yape / Plin: pago exacto, sin vuelto
-    inpRec.disabled    = true;
-    inpRec.value       = '';
-    inpRec.placeholder = 'No aplica';
-    inpVuelto.value    = money(0);
-  }
-}
+      if (medio === 'Efectivo') {
+        inpRec.disabled    = false;
+        inpRec.placeholder = 'Ingrese monto recibido';
+        const recibido = parseNum(inpRec.value);
+        const vuelto   = Math.max(0, recibido - total);
+        inpVuelto.value = money(vuelto);
+      } else {
+        inpRec.disabled    = true;
+        inpRec.value       = '';
+        inpRec.placeholder = 'No aplica';
+        inpVuelto.value    = money(0);
+      }
+    }
 
     /* ================================
        Cobro -> API + fallback LS
@@ -1007,24 +1102,23 @@ function setupClienteAutocomplete() {
       const total = parseNum($('#totAll').textContent.replace(/[^\d.]/g, ''));
 
       const ticket = {
-  id: ticketId,
-  ticket: ticketId,
-  ts: nowISO(),
-  cajero: CAJERO,
-  medio_pago: medio,
-  total,
-  tipo: 'venta',
-  clienteDoc: CLIENTE_ACTUAL.doc,
-  clienteNombre: CLIENTE_ACTUAL.nombre,
-  items: carrito.map(it => ({
-    sku: it.sku,
-    nombre: it.nombre,
-    cantidad: it.qty,
-    precio: it.precio
-  }))
-};
+        id: ticketId,
+        ticket: ticketId,
+        ts: nowISO(),
+        cajero: CAJERO,
+        medio_pago: medio,
+        total,
+        tipo: 'venta',
+        clienteDoc: CLIENTE_ACTUAL.doc,
+        clienteNombre: CLIENTE_ACTUAL.nombre,
+        items: carrito.map(it => ({
+          sku: it.sku,
+          nombre: it.nombre,
+          cantidad: it.qty,
+          precio: it.precio
+        }))
+      };
 
-      // 1) Llamada API real al backend (VentaRequest)
       try {
         if (Endpoints.ventas) {
           const body = {
@@ -1040,7 +1134,6 @@ function setupClienteAutocomplete() {
         console.warn('POST API (venta):', err?.message);
       }
 
-      // 2) Fallback / espejo en LocalStorage (para ticket local)
       ventasTurno.push({
         monto: total,
         pago: medio,
@@ -1052,7 +1145,6 @@ function setupClienteAutocomplete() {
       ventasHist.push(ticket);
       saveLS(LS_VHIST, ventasHist);
 
-      // Inventario local (solo para simulación en LS)
       for (const it of carrito) {
         let inv = inventario.find(x => String(x.sku) === String(it.sku));
         if (!inv) {
@@ -1079,7 +1171,6 @@ function setupClienteAutocomplete() {
       saveLS(LS_INV, inventario);
       saveLS(LS_MOV, movimientos);
 
-      // 3) Ticket + reset
       renderTicket(ticket);
       const mp = document.getElementById('modalPago');
       if (mp) {
@@ -1100,17 +1191,17 @@ function setupClienteAutocomplete() {
        Ticket
     ==================================*/
     function renderTicket(tk) {
-  const lines = [];
-  lines.push('          OXXO - Punto de Venta');
-  lines.push('----------------------------------------');
-  lines.push(`Ticket: ${tk.ticket}    Fecha: ${tk.ts}`);
-  lines.push(`Cajero: ${tk.cajero}`);
-  if (tk.clienteNombre || tk.clienteDoc) {
-    const nom = tk.clienteNombre || 'Mostrador';
-    const doc = tk.clienteDoc ? ` (${tk.clienteDoc})` : '';
-    lines.push(`Cliente: ${nom}${doc}`);
-  }
-  lines.push(`Pago:   ${tk.medio_pago}`);
+      const lines = [];
+      lines.push('          OXXO - Punto de Venta');
+      lines.push('----------------------------------------');
+      lines.push(`Ticket: ${tk.ticket}    Fecha: ${tk.ts}`);
+      lines.push(`Cajero: ${tk.cajero}`);
+      if (tk.clienteNombre || tk.clienteDoc) {
+        const nom = tk.clienteNombre || 'Mostrador';
+        const doc = tk.clienteDoc ? ` (${tk.clienteDoc})` : '';
+        lines.push(`Cliente: ${nom}${doc}`);
+      }
+      lines.push(`Pago:   ${tk.medio_pago}`);
       lines.push('----------------------------------------');
       tk.items.forEach(it => {
         const sub = it.precio * it.cantidad;
@@ -1139,43 +1230,40 @@ function setupClienteAutocomplete() {
       w.close();
     }
 
-
-     
-
     /* ================================
        Tickets recientes (API -> LS)
     ==================================*/
     async function renderTicketsRecientes() {
-  const tb = $('#tbTickets tbody');
-  tb.innerHTML = '';
-  let ultimos = [];
-  try {
-    const arr = await getArray(Endpoints.ventas);
-    ultimos = arr.slice(-8);
-  } catch {
-    ultimos = (ventasHist || []).slice(-8);
-  }
+      const tb = $('#tbTickets tbody');
+      tb.innerHTML = '';
+      let ultimos = [];
+      try {
+        const arr = await getArray(Endpoints.ventas);
+        ultimos = arr.slice(-8);
+      } catch {
+        ultimos = (ventasHist || []).slice(-8);
+      }
 
-  ultimos.reverse().forEach(tk => {
-    const id    = tk.ticket || tk.id || '—';
-    const total = tk.total ?? tk.monto ?? 0;
-    const pago  = tk.medio_pago || tk.pago || '—';
+      ultimos.reverse().forEach(tk => {
+        const id    = tk.ticket || tk.id || '—';
+        const total = tk.total ?? tk.monto ?? 0;
+        const pago  = tk.medio_pago || tk.pago || '—';
 
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${id}</td>
-      <td>${tk.ts || tk.fecha || '—'}</td>
-      <td>${pago}</td>
-      <td class="text-end">${money(total)}</td>
-      <td class="text-end">
-        <button class="btn btn-sm btn-outline-secondary" onclick='verTicket("${id}")'>
-          Ticket
-        </button>
-      </td>
-    `;
-    tb.appendChild(tr);
-  });
-}
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${id}</td>
+          <td>${tk.ts || tk.fecha || '—'}</td>
+          <td>${pago}</td>
+          <td class="text-end">${money(total)}</td>
+          <td class="text-end">
+            <button class="btn btn-sm btn-outline-secondary" onclick='verTicket("${id}")'>
+              Ticket
+            </button>
+          </td>
+        `;
+        tb.appendChild(tr);
+      });
+    }
 
     function verTicket(tid) {
       const tk = (ventasHist || []).find(v => v.ticket === tid || v.id === tid);
@@ -1189,7 +1277,6 @@ function setupClienteAutocomplete() {
        Eventos menores
     ==================================*/
     window.addEventListener('focus', async () => {
-      // re-sincroniza catálogo/inventario
       try {
         const apiCat = await getArray(Endpoints.productos);
         if (apiCat?.length) catalogo = normalizeCatalog(apiCat);
