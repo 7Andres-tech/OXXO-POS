@@ -41,7 +41,7 @@
             <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#">Reportes</a>
             <ul class="dropdown-menu">
               <li><a class="dropdown-item" href="reportes.html#ventas">R. Ventas</a></li>
-              <li><a class="dropdown-item" href="reportes.html#clientes">R. Clientes</a></li>
+              <li><a class="dropdown-item" href="reportes.html#clientes">R. Inventario</a></li>
               <li><a class="dropdown-item" href="reportes.html#productos">R. Productos</a></li>
             </ul>
           </li>
@@ -265,6 +265,7 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
   <script src="/js/auth.js" defer></script>
   <script src="/js/api.js" defer></script>
+  <script src="/js/clientes.js?v=2"></script>
 
   <script>
     'use strict';
@@ -543,6 +544,16 @@ function showAlertModal(message) {
       if (added > 0) saveLS(LS_INV, inventario);
     }
 
+    function seleccionarCliente(cliente) {
+  CLIENTE_ACTUAL = {
+    doc: cliente.doc || cliente.doc || cliente.doc || null,
+    nombre: cliente.nombre || cliente.nombres || cliente.name || '—'
+  };
+
+  renderClienteActual();
+}
+
+
     /* ================================
        Cliente actual (POS)
     ==================================*/
@@ -766,7 +777,7 @@ function showAlertModal(message) {
                data-nom="${c.nombre || ''}">
             <div class="fw-semibold">${c.nombre || 'Cliente sin nombre'}</div>
             <div class="small-muted">
-              DNI: ${c.doc || '—'}
+              doc: ${c.doc || '—'}
               · Compras: ${c.compras ?? 0}
               · Puntos: ${c.puntos ?? 0}
             </div>
@@ -775,6 +786,44 @@ function showAlertModal(message) {
       });
       cliList.classList.remove('d-none');
     }
+
+    // Evento para seleccionar un cliente de la lista
+cliList?.addEventListener('click', e => {
+  const item = e.target.closest('.list-group-item');
+  if (!item) return;
+
+  const doc = item.dataset.doc || null;
+  const nom = item.dataset.nom || 'Mostrador';
+
+  // Buscar cliente en CLIENTES
+  const cli = CLIENTES.find(c => String(c.doc) === String(doc));
+
+  if (cli) {
+    CLIENTE_ACTUAL = {
+      doc: cli.doc,
+      nombre: cli.nombre,
+      compras: cli.compras ?? 0,
+      puntos: cli.puntos ?? 0
+    };
+  } else {
+    // Cliente "Mostrador"
+    CLIENTE_ACTUAL = {
+      doc: null,
+      nombre: 'Mostrador',
+      compras: 0,
+      puntos: 0
+    };
+  }
+
+  // Rellenar input con nombre
+  cliInput.value = CLIENTE_ACTUAL.nombre;
+
+  // Ocultar lista
+  cliList.classList.add('d-none');
+
+  console.log("Cliente seleccionado:", CLIENTE_ACTUAL);
+});
+
 
     function hideCliList() {
       if (!cliList) return;
@@ -1047,16 +1096,57 @@ function showAlertModal(message) {
     }
 
     function submitScan(e) {
-      e.preventDefault();
-      const val = inCode.value;
-      const qty = $('#inQty').value;
-      if (!val.trim()) return inCode.focus();
-      addToCart(val, qty);
-      inCode.value = '';
-      $('#inQty').value = 1;
-      hideAuto();
-      inCode.focus();
-    }
+  e.preventDefault();
+
+  const val = inCode.value;
+  const qty = Number($('#inQty').value);
+
+  if (!val.trim()) return inCode.focus();
+
+  // Buscar producto por SKU o código de barras
+  const prod = productos.find(p =>
+    String(p.sku) === String(val) ||
+    String(p.codigoBarras) === String(val)
+  );
+
+  console.log("VAL:", val);
+  console.log("PROD:", prod);
+
+  if (!prod) {
+    showAlertModal("Producto no encontrado.");
+    return;
+  }
+
+  // Buscar inventario del producto
+  const inv = inventario.find(i => String(i.sku) === String(prod.sku));
+  console.log("INV:", inv);
+
+  if (!inv) {
+    showAlertModal(`El producto "${prod.nombre}" no tiene inventario registrado.`);
+    return;
+  }
+
+  // Validación de stock
+  if (inv.stock <= 0) {
+    showAlertModal(`No puedes vender "${prod.nombre}". Stock disponible: 0`);
+    return;
+  }
+
+  if (inv.stock < qty) {
+    showAlertModal(`Stock insuficiente. Solo quedan ${inv.stock} unidades.`);
+    return;
+  }
+
+  // Si pasa todas las validaciones: agregar al carrito
+  addToCart(val, qty);
+
+  // Reset inputs
+  inCode.value = '';
+  $('#inQty').value = 1;
+  hideAuto();
+  inCode.focus();
+}
+
 
     function vaciarCarrito() {
       if (!carrito.length) return;
@@ -1096,6 +1186,29 @@ function showAlertModal(message) {
         f.classList.add('was-validated');
         return;
       }
+
+      for (const it of carrito) {
+    const inv = inventario.find(i => String(i.sku) === String(it.sku));
+
+    if (!inv) {
+      showAlertModal(`El producto ${it.nombre} no tiene inventario.`);
+      return;
+    }
+
+    if (inv.stock <= 0) {
+      showAlertModal(`No puedes vender "${it.nombre}". Stock disponible: 0`);
+      return;
+    }
+
+    if (inv.stock < it.qty) {
+      showAlertModal(
+        `Stock insuficiente para "${it.nombre}". ` +
+        `Stock actual: ${inv.stock}, solicitado: ${it.qty}`
+      );
+      return;
+    }
+  }
+  // ============================
       if (!carrito.length) return alert('El carrito está vacío.');
 
       const medio = $('#pagoMedio').value;
@@ -1144,6 +1257,11 @@ function showAlertModal(message) {
       saveLS(LS_VTUR, ventasTurno);
       ventasHist.push(ticket);
       saveLS(LS_VHIST, ventasHist);
+
+      // ⭐ SUMAR 5 PUNTOS AL CLIENTE ⭐
+if (CLIENTE_ACTUAL?.doc) {
+  agregarPuntosCliente(CLIENTE_ACTUAL.doc, 5);
+}
 
       for (const it of carrito) {
         let inv = inventario.find(x => String(x.sku) === String(it.sku));

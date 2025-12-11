@@ -37,7 +37,7 @@
           <a class="nav-link dropdown-toggle" data-bs-toggle="dropdown" href="#">Reportes</a>
           <ul class="dropdown-menu">
             <li><a class="dropdown-item" href="reportes.html#ventas">R. Ventas</a></li>
-            <li><a class="dropdown-item" href="reportes.html#clientes">R. Clientes</a></li>
+            <li><a class="dropdown-item" href="reportes.html#clientes">R. Inventario</a></li>
             <li><a class="dropdown-item" href="reportes.html#productos">R. Productos</a></li>
           </ul>
         </li>
@@ -341,11 +341,11 @@
     function fillFilters(list){
       const selCat = $('filtroCat');
       const cats = Array.from(new Set(list.map(p=>p.categoria).filter(Boolean))).sort();
-      selCat.innerHTML = '<option value="">Todas</option>' + cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+      selCat.innerHTML = '<option value="">Categorias</option>' + cats.map(c=>`<option value="${c}">${c}</option>`).join('');
 
       const selProv = $('filtroProv');
       const provs = Array.from(new Set(list.map(p=>p.proveedor).filter(Boolean))).sort();
-      selProv.innerHTML = '<option value="">Todos</option>' + provs.map(c=>`<option value="${c}">${c}</option>`).join('');
+      selProv.innerHTML = '<option value="">Proveedores</option>' + provs.map(c=>`<option value="${c}">${c}</option>`).join('');
 
       // también llenamos los datalist del modal
       const dlCat  = $('dlCat');

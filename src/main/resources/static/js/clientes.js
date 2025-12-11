@@ -2,6 +2,21 @@
 (() => {
   "use strict";
 
+  const ventasHist = JSON.parse(
+    localStorage.getItem("ventasHist") ||
+    localStorage.getItem("vHist") ||
+    localStorage.getItem("vhist") ||
+    "[]"
+  );
+  
+  const ventasTurno = JSON.parse(
+    localStorage.getItem("ventasTurno") ||
+    localStorage.getItem("vTurno") ||
+    localStorage.getItem("vturno") ||
+    "[]"
+  );
+  
+
   // ---------- Helpers ----------
   const $ = (s) => document.querySelector(s);
   const PEN = new Intl.NumberFormat("es-PE", { style: "currency", currency: "PEN" });
@@ -41,6 +56,39 @@
     const x = new Date(d);
     return isNaN(x.getTime()) ? null : x;
   }
+
+  function calcularComprasCliente(doc) {
+    const lista = [...ventasHist, ...ventasTurno]
+      .filter(v => v.clienteDoc === doc);
+  
+    if (lista.length === 0)
+      return { compras: 0, ultima: null };
+  
+    const ultima = lista.reduce((a, b) =>
+      (new Date(a.ts) > new Date(b.ts) ? a : b)
+    );
+  
+    return {
+      compras: lista.length,
+      ultima: ultima.ts
+    };
+  }
+  window.agregarPuntosCliente = function (doc, puntos) {
+    let clientes = JSON.parse(localStorage.getItem('clientes_data') || '[]');
+
+    const c = clientes.find(x => String(x.doc) === String(doc));
+    if (c) {
+        c.puntos = (c.puntos || 0) + puntos;
+
+        localStorage.setItem('clientes_data', JSON.stringify(clientes));
+
+        const idx = CLIENTES.findIndex(x => String(x.doc) === String(doc));
+        if (idx !== -1) CLIENTES[idx].puntos = c.puntos;
+    }
+};
+
+
+  
 
   function getToken() {
     // intenta varias formas (según tu auth.js)
@@ -191,9 +239,22 @@
   async function refresh() {
     const [lista, kpis] = await Promise.all([apiList(), apiKpis().catch(() => null)]);
     CLIENTES = Array.isArray(lista) ? lista : [];
+  
+    // Enriquecer cada cliente con compras y última compra
+    CLIENTES = CLIENTES.map(c => {
+      const info = calcularComprasCliente(c.doc);
+      return {
+        ...c,
+        compras: info.compras,
+        ultimaCompra: info.ultima
+      };
+    });
+  
+    // 🔥 Esto faltaba
     renderTabla();
     renderKpisFromServer(kpis);
   }
+  
 
   // ---------- Modal ----------
   function openCli(doc) {
